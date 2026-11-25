@@ -19,6 +19,7 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -38,7 +39,7 @@ public class ModularAxe extends Item implements IReaperItem, IModularMiningTool,
     private final DETier itemTier;
 
     public ModularAxe(DETier tier, TechProperties props) {
-        super(props.tool(tier.material(), net.minecraft.tags.BlockTags.MINEABLE_WITH_AXE, 5, -3.0F, 5.0F)); // port-26.1.2: axe() 3-arg // port-26.1.2: AxeItem/Tier удалены -> Item.Properties.tool-компоненты (эталон Items26)
+        super(props.tool(tier.material(), net.minecraft.tags.BlockTags.MINEABLE_WITH_AXE, 5, -3.0F, 5.0F).attributes(ItemAttributeModifiers.EMPTY));
         this.techLevel = props.getTechLevel();
         this.itemTier = tier;
     }

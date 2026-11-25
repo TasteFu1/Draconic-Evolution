@@ -20,3 +20,14 @@ gradle.beforeProject { project ->
         }
     }
 }
+
+
+// The upstream wall-clock manifest entry invalidates the same library on every invocation.
+// Stable jar contents also allow Windows clients to keep a matching library open during a rebuild.
+gradle.afterProject { project ->
+    if (project.name == 'CodeChickenLib') {
+        project.tasks.named('jar', Jar) {
+            manifest.attributes.remove('Implementation-Timestamp')
+        }
+    }
+}

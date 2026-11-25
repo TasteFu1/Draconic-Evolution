@@ -57,7 +57,7 @@ public class ClientEventHandler {
 
     public static void addPackFinders(AddPackFindersEvent event) {
         event.addPackFinders(Identifier.fromNamespaceAndPath(MODID, "2d_item_models"), PackType.CLIENT_RESOURCES,
-                Component.literal("Draconic Evolution 2D"), PackSource.BUILT_IN, false, Pack.Position.TOP);
+                Component.literal("Draconic Evolution Classic 16×16"), PackSource.BUILT_IN, false, Pack.Position.TOP);
     }
 
     private static void registerOverlays(RegisterGuiLayersEvent event) {

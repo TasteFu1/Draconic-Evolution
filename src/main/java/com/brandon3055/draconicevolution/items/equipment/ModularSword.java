@@ -14,6 +14,7 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 import net.neoforged.api.distmarker.Dist;
@@ -32,7 +33,7 @@ public class ModularSword extends Item implements IReaperItem, IModularMelee, IM
     private final DETier itemTier;
 
     public ModularSword(DETier tier, TechProperties props) {
-        super(props.sword(tier.material(), 3, -2.4F)); // port-26.1.2: SwordItem/Tier удалены -> Item.Properties.tool-компоненты (эталон Items26)
+        super(props.sword(tier.material(), 3, -2.4F).attributes(ItemAttributeModifiers.EMPTY));
         this.techLevel = props.getTechLevel();
         this.itemTier = tier;
     }

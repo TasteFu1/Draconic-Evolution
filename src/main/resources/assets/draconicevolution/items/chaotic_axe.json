@@ -1,8 +1,21 @@
 {
   "model": {
-    "type": "draconicevolution:modular_tool",
-    "base": "draconicevolution:item/chaotic_axe",
-    "family": "axe",
-    "tier": 3
+    "type": "minecraft:select",
+    "property": "minecraft:display_context",
+    "cases": [
+      {
+        "when": "gui",
+        "model": {
+          "type": "minecraft:model",
+          "model": "draconicevolution:item/gui/chaotic_axe"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "draconicevolution:modular_tool",
+      "base": "draconicevolution:item/chaotic_axe",
+      "family": "axe",
+      "tier": 3
+    }
   }
 }

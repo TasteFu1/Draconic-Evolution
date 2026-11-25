@@ -37,6 +37,8 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.AddClientReloadListenersEvent;
+import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
+import com.brandon3055.draconicevolution.client.model.ModularChestpieceModel;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent;
 import net.neoforged.neoforge.common.NeoForge;
@@ -113,6 +115,8 @@ public class DEClient {
     }
 
     public static void onResourceReload(AddClientReloadListenersEvent event) {
+        event.addListener(net.minecraft.resources.Identifier.fromNamespaceAndPath(MODID, "classic_chestpieces"),
+                (ResourceManagerReloadListener) ModularChestpieceModel::reloadClassicTextures);
         var modules = ModuleTextures.getAtlasHolder();
         modules.init();
         event.addListener(net.minecraft.resources.Identifier.fromNamespaceAndPath(MODID, "module_atlas"), modules);

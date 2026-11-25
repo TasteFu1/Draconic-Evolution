@@ -16,6 +16,14 @@ def coreJar = new File(dependencyDir, "BrandonsCore-${bcore_version}.jar")
 def cclJar = new File(dependencyDir, "codechickenlib-${ccl_version}.jar")
 
 sourceSets.main.resources.srcDir 'src/main/generated'
+
+def classicResourcePack = tasks.register('classicResourcePack', Zip) {
+    from 'src/main/resources/2d_item_models'
+    from 'src/main/generated/2d_item_models'
+    archiveFileName = "Draconic-Evolution-Classic-16x-${mc_version}.zip"
+    destinationDirectory = layout.buildDirectory.dir('distributions')
+}
+tasks.named('assemble') { dependsOn classicResourcePack }
 sourceSets.main.java {
     // These 1.21 authoring tools and the unused prototype renderer are retained for reference.
     exclude 'com/brandon3055/draconicevolution/datagen/**'

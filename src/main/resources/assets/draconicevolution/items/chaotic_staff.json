@@ -1,8 +1,21 @@
 {
   "model": {
-    "type": "draconicevolution:modular_tool",
-    "base": "draconicevolution:item/chaotic_staff",
-    "family": "staff",
-    "tier": 3
+    "type": "minecraft:select",
+    "property": "minecraft:display_context",
+    "cases": [
+      {
+        "when": "gui",
+        "model": {
+          "type": "minecraft:model",
+          "model": "draconicevolution:item/gui/chaotic_staff"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "draconicevolution:modular_tool",
+      "base": "draconicevolution:item/chaotic_staff",
+      "family": "staff",
+      "tier": 3
+    }
   }
 }

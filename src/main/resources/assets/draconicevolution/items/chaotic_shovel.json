@@ -1,8 +1,21 @@
 {
   "model": {
-    "type": "draconicevolution:modular_tool",
-    "base": "draconicevolution:item/chaotic_shovel",
-    "family": "shovel",
-    "tier": 3
+    "type": "minecraft:select",
+    "property": "minecraft:display_context",
+    "cases": [
+      {
+        "when": "gui",
+        "model": {
+          "type": "minecraft:model",
+          "model": "draconicevolution:item/gui/chaotic_shovel"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "draconicevolution:modular_tool",
+      "base": "draconicevolution:item/chaotic_shovel",
+      "family": "shovel",
+      "tier": 3
+    }
   }
 }

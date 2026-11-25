@@ -14,6 +14,7 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -33,7 +34,7 @@ public class ModularPickaxe extends Item implements IModularMiningTool, IDraconi
     private final DETier itemTier;
 
     public ModularPickaxe(DETier tier, TechProperties props) {
-        super(props.pickaxe(tier.material(), 1, -2.8F)); // port-26.1.2: PickaxeItem/Tier удалены -> Item.Properties.pickaxe (эталон Items26)
+        super(props.pickaxe(tier.material(), 1, -2.8F).attributes(ItemAttributeModifiers.EMPTY));
         this.techLevel = props.getTechLevel();
         this.itemTier = tier;
     }

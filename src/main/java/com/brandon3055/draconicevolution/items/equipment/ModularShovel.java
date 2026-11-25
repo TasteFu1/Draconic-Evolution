@@ -15,6 +15,7 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -34,7 +35,7 @@ public class ModularShovel extends Item implements IModularMiningTool, IDraconic
     private final DETier itemTier;
 
     public ModularShovel(DETier tier, TechProperties props) {
-        super(props.shovel(tier.material(), 1.5F, -3.0F)); // port-26.1.2: ShovelItem/Tier удалены -> Item.Properties.tool-компоненты (эталон Items26)
+        super(props.shovel(tier.material(), 1.5F, -3.0F).attributes(ItemAttributeModifiers.EMPTY));
         this.techLevel = props.getTechLevel();
         this.itemTier = tier;
     }

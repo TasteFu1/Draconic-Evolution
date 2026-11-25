@@ -770,6 +770,7 @@ public class LangGenerator extends LanguageProvider {
 
         //Modular Item
         helper.setPrefix("modular_item." + MODID);
+        helper.add("label",                                                     "[Modular Item]");
         helper.add("requires_energy",                                           "This item requires energy modules to function.");
         helper.add("requires_energy_press",                                     "Press %s to open module config.");
         helper.add("error.no_modular_items",                                    "You don't have any modular items in your inventory!");
@@ -783,6 +784,7 @@ public class LangGenerator extends LanguageProvider {
 
         //Dislocator
         helper.setPrefix("dislocate." + MODID);
+        helper.add("low_health",                                                "You do not have enough health to teleport!");
         helper.add("not_set",                                                   "You must first set the destination before you can teleport (Sneak + Right click).");
         helper.add("player_need_advanced",                                      "You need a more powerful dislocator to do that.");
         helper.add("entity_sent_to",                                            "The entity has been sent to");

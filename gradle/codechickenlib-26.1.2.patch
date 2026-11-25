@@ -1,6 +1,62 @@
+diff --git a/src/main/java/codechicken/lib/CodeChickenLib.java b/src/main/java/codechicken/lib/CodeChickenLib.java
+index 31fc27092a2a90620e02f56f99c62403c70c1f52..96f9389c5f696fc7ee68c8deea1d36cc176690c1 100644
+--- a/src/main/java/codechicken/lib/CodeChickenLib.java
++++ b/src/main/java/codechicken/lib/CodeChickenLib.java
+@@ -3,6 +3,7 @@ package codechicken.lib;
+ import codechicken.lib.config.ConfigCategory;
+ import codechicken.lib.config.ConfigFile;
+ import codechicken.lib.config.ConfigSyncManager;
++import codechicken.lib.fluid.FluidUtils;
+ import codechicken.lib.internal.CCLNetwork;
+ import codechicken.lib.internal.ClientInit;
+ import codechicken.lib.internal.DataGenerators;
+@@ -13,6 +14,7 @@ import net.neoforged.fml.ModContainer;
+ import net.neoforged.fml.common.Mod;
+ import net.neoforged.fml.loading.FMLConfig;
+ import net.neoforged.fml.loading.FMLEnvironment;
++import net.neoforged.neoforge.common.NeoForge;
+ 
+ import java.nio.file.Paths;
+ 
+@@ -42,6 +44,7 @@ public class CodeChickenLib {
+         }
+ 
+         ConfigSyncManager.init(modBus);
++        NeoForge.EVENT_BUS.addListener(FluidUtils::onComponentsBound);
+ 
+         CCLCommands.init();
+         CCLNetwork.init(modBus, container);
+diff --git a/src/main/java/codechicken/lib/fluid/FluidUtils.java b/src/main/java/codechicken/lib/fluid/FluidUtils.java
+index 7784442476dd158aa7956ef8ace34842cbe289e1..5862134058d9c86ae73c31294175a61a9546c532 100644
+--- a/src/main/java/codechicken/lib/fluid/FluidUtils.java
++++ b/src/main/java/codechicken/lib/fluid/FluidUtils.java
+@@ -2,14 +2,21 @@ package codechicken.lib.fluid;
+ 
+ import net.minecraft.world.level.material.Fluid;
+ import net.minecraft.world.level.material.Fluids;
++import net.neoforged.neoforge.event.DefaultDataComponentsBoundEvent;
+ import net.neoforged.neoforge.fluids.FluidStack;
+ import net.neoforged.neoforge.fluids.FluidType;
+ 
+ public class FluidUtils {
+ 
+     public static int B = FluidType.BUCKET_VOLUME;
+-    public static FluidStack water = new FluidStack(Fluids.WATER, 1000);
+-    public static FluidStack lava = new FluidStack(Fluids.LAVA, 1000);
++    public static FluidStack water = FluidStack.EMPTY;
++    public static FluidStack lava = FluidStack.EMPTY;
++
++    public static void onComponentsBound(DefaultDataComponentsBoundEvent event) {
++        if (!event.shouldUpdateStaticData()) return;
++        water = new FluidStack(Fluids.WATER, FluidType.BUCKET_VOLUME);
++        lava = new FluidStack(Fluids.LAVA, FluidType.BUCKET_VOLUME);
++    }
+ 
+     public static int getLuminosity(FluidStack stack, double density) {
+         if (stack.isEmpty()) {
 diff --git a/src/main/java/codechicken/lib/internal/mixin/MinecraftMixin.java b/src/main/java/codechicken/lib/internal/mixin/MinecraftMixin.java
 deleted file mode 100644
-index 2a37152..0000000
+index 2a371524c3e8fa29437efe7c730a30beb75bd7f5..0000000000000000000000000000000000000000
 --- a/src/main/java/codechicken/lib/internal/mixin/MinecraftMixin.java
 +++ /dev/null
 @@ -1,25 +0,0 @@
@@ -31,7 +87,7 @@ index 2a37152..0000000
 -}
 diff --git a/src/main/java/codechicken/lib/inventory/container/modular/CursorHelper.java b/src/main/java/codechicken/lib/inventory/container/modular/CursorHelper.java
 new file mode 100644
-index 0000000..c3c11e3
+index 0000000000000000000000000000000000000000..c3c11e33f44602e3effac0335c1125f58c54224f
 --- /dev/null
 +++ b/src/main/java/codechicken/lib/inventory/container/modular/CursorHelper.java
 @@ -0,0 +1,103 @@
@@ -140,7 +196,7 @@ index 0000000..c3c11e3
 +}
 diff --git a/src/main/java/codechicken/lib/inventory/container/modular/DataSync.java b/src/main/java/codechicken/lib/inventory/container/modular/DataSync.java
 new file mode 100644
-index 0000000..5669412
+index 0000000000000000000000000000000000000000..56694129ef395c0440ed653d349651ddf5af14dd
 --- /dev/null
 +++ b/src/main/java/codechicken/lib/inventory/container/modular/DataSync.java
 @@ -0,0 +1,10 @@
@@ -156,7 +212,7 @@ index 0000000..5669412
 +}
 diff --git a/src/main/java/codechicken/lib/inventory/container/modular/SlotGroup.java b/src/main/java/codechicken/lib/inventory/container/modular/SlotGroup.java
 new file mode 100644
-index 0000000..2472487
+index 0000000000000000000000000000000000000000..2472487689dc5055bc132cd447cf5126227a3820
 --- /dev/null
 +++ b/src/main/java/codechicken/lib/inventory/container/modular/SlotGroup.java
 @@ -0,0 +1,116 @@
@@ -277,7 +333,7 @@ index 0000000..2472487
 +    }
 +}
 diff --git a/src/main/resources/mixins.codechickenlib.json b/src/main/resources/mixins.codechickenlib.json
-index 9ff4c0b..9448a79 100644
+index 9ff4c0bcb4f2a72b1d64d19a8316bde67c3b9488..9448a797a5a73ae04b38c92240d4f030e9c4c198 100644
 --- a/src/main/resources/mixins.codechickenlib.json
 +++ b/src/main/resources/mixins.codechickenlib.json
 @@ -11,7 +11,6 @@

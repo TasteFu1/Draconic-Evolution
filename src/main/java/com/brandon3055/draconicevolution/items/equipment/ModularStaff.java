@@ -51,6 +51,7 @@ import net.minecraft.world.entity.player.Player;
 
 
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
 
 import net.minecraft.world.item.TooltipFlag;
 
@@ -73,7 +74,7 @@ public class ModularStaff extends Item implements IReaperItem, IModularMiningToo
     private final DETier itemTier;
 
     public ModularStaff(DETier tier, TechProperties props) {
-        super(props.tool(tier.material(), DETags.Blocks.MINEABLE_WITH_STAFF, 3, -2.4F, 0)); // port-26.1.2: DiggerItem/Tier удалены -> Item.Properties.tool
+        super(props.tool(tier.material(), DETags.Blocks.MINEABLE_WITH_STAFF, 3, -2.4F, 0).attributes(ItemAttributeModifiers.EMPTY));
         this.techLevel = props.getTechLevel();
         this.itemTier = tier;
     }

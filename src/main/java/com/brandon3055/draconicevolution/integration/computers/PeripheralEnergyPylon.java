@@ -8,7 +8,6 @@ import net.minecraft.core.Direction;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
@@ -43,21 +42,19 @@ public class PeripheralEnergyPylon implements IPeripheral {
 	
 	@LuaFunction(mainThread = true)
 	public final Map<Object, Object> getEnergyStoredInNotation() {
-		Map<Object, Object> map = new HashMap<Object, Object>();
-		String[] split = tile.getCore().energy.getScientific().split("E", 2);
-		map.put("coefficient", Double.parseDouble(split[0]));
-		map.put("exponent", Integer.parseInt(split[1]));
-		return map;
+		var core = tile.getCore();
+		return notation(core == null ? 0L : core.energy.getStoredBig());
 	}
 	
 	@LuaFunction(mainThread = true)
 	public final Map<Object, Object> getMaxEnergyStoredInNotation() {
-		Map<Object, Object> map = new HashMap<Object, Object>();
 		long maxEnergy = tile.opAdapter.getMaxOPStored();
-		String[] split = new DecimalFormat("0.######E0", DecimalFormatSymbols.getInstance(Locale.ROOT)).format(maxEnergy).split("E", 2);
-		map.put("coefficient", Double.parseDouble(maxEnergy == Long.MAX_VALUE ? "-1" : split[0]));
-		map.put("exponent", Integer.parseInt(maxEnergy == Long.MAX_VALUE ? "-1" : split[1]));
-		return map;
+		return maxEnergy == Long.MAX_VALUE ? Map.of("coefficient", -1D, "exponent", -1) : notation(maxEnergy);
+	}
+
+	private static Map<Object, Object> notation(Number energy) {
+		String[] parts = new DecimalFormat("0.######E0", DecimalFormatSymbols.getInstance(Locale.ROOT)).format(energy).split("E", 2);
+		return Map.of("coefficient", Double.parseDouble(parts[0]), "exponent", Integer.parseInt(parts[1]));
 	}
 	
 	@LuaFunction(mainThread = true)

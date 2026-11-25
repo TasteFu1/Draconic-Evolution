@@ -583,6 +583,7 @@
   "modular_item.draconicevolution.error.no_modular_items": "You don't have any modular items in your inventory!",
   "modular_item.draconicevolution.error.not_compatible_with": "Not compatible with",
   "modular_item.draconicevolution.error.only_one_use_override_module": "There is already a module that overrides right click functionality installed. Only one such module can be installed at a time!",
+  "modular_item.draconicevolution.label": "[Modular Item]",
   "modular_item.draconicevolution.requires_energy": "This item requires energy modules to function.",
   "modular_item.draconicevolution.requires_energy_press": "Press %s to open module config.",
   "module.draconicevolution.aoe.name": "AOE",
@@ -736,5 +737,6 @@
   "tooltip.draconicevolution.bow.energy_per_shot": "%s OP/shot",
   "emi.category.draconicevolution.fusion_crafting": "Fusion Crafting",
   "emi.draconicevolution.core_catalyst": "Core catalyst (consumed)",
-  "emi.draconicevolution.not_consumed": "Not consumed"
+  "emi.draconicevolution.not_consumed": "Not consumed",
+  "dislocate.draconicevolution.low_health": "You do not have enough health to teleport!"
 }

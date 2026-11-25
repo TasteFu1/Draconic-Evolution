@@ -28,6 +28,11 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelPart;
+import net.minecraft.client.model.geom.LayerDefinitions;
+import net.minecraft.client.renderer.entity.state.HumanoidRenderState;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.neoforged.neoforge.client.ClientHooks;
 import net.minecraft.client.model.geom.builders.CubeDeformation;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.rendertype.RenderType;
@@ -45,13 +50,34 @@ import static com.brandon3055.draconicevolution.DraconicEvolution.MODID;
  */
 public class ModularChestpieceModel<T extends LivingEntity> extends HumanoidModel<net.minecraft.client.renderer.entity.state.HumanoidRenderState> implements EquippedItemModel {
 
+    private static final Set<TechLevel> classicTiers = EnumSet.noneOf(TechLevel.class);
     private final TechLevel techLevel;
+    private final Identifier classicTexture;
+    private final HumanoidModel<HumanoidRenderState> classicArmor;
+
+    private static Identifier classicTexture(TechLevel tier) {
+        return Identifier.fromNamespaceAndPath(MODID, "textures/entity/equipment/humanoid/" +
+                tier.name().toLowerCase(Locale.ROOT) + "_chestpiece.png");
+    }
+
+    public static void reloadClassicTextures(ResourceManager resources) {
+        classicTiers.clear();
+        for (TechLevel tier : List.of(TechLevel.WYVERN, TechLevel.DRACONIC, TechLevel.CHAOTIC)) {
+            if (resources.getResource(classicTexture(tier)).isPresent()) classicTiers.add(tier);
+        }
+    }
+
     private int shieldColour;
     private float shieldState;
 
     public ModularChestpieceModel(TechLevel techLevel, boolean isOnArmor) {
         super(createEquipmentRoot());
         this.techLevel = techLevel;
+        classicTexture = classicTexture(techLevel);
+        CubeDeformation outer = LayerDefinitions.OUTER_ARMOR_DEFORMATION;
+        if (isOnArmor) outer = outer.extend(0.15F);
+        classicArmor = new HumanoidModel<>(HumanoidModel.createArmorMeshSet(
+                LayerDefinitions.INNER_ARMOR_DEFORMATION, outer).chest().getRoot().bake(64, 32));
         Map<String, CCModel> model = new OBJParser(Identifier.fromNamespaceAndPath(DraconicEvolution.MODID, "models/item/equipment/chestpeice.obj")).ignoreMtl().parse();
         CCModel baseModel = model.get("base_model").backfacedCopy();
         CCModel materialModel = model.get("chevrons").backfacedCopy();
@@ -141,12 +167,21 @@ public class ModularChestpieceModel<T extends LivingEntity> extends HumanoidMode
             float f1 = 1.0F / 2F;
             poseStack.scale(f1, f1, f1);
             poseStack.translate(0.0D, 24F / 16.0F, 0.0D);
-            this.bodyParts().forEach(part -> ((ExtendedModelPart) part).render(poseStack, buffers, packedLight, packedOverlay));
+            renderBody(poseStack, buffers, packedLight, packedOverlay);
             poseStack.popPose();
         } else {
             this.headParts().forEach(part -> ((ExtendedModelPart) part).render(poseStack, buffers, packedLight, packedOverlay));
-            this.bodyParts().forEach(part -> ((ExtendedModelPart) part).render(poseStack, buffers, packedLight, packedOverlay));
+            renderBody(poseStack, buffers, packedLight, packedOverlay);
         }
+    }
+
+    private void renderBody(PoseStack pose, MultiBufferSource buffers, int light, int overlay) {
+        if (classicTiers.contains(techLevel)) {
+            ClientHooks.copyModelProperties(this, classicArmor);
+            int color = techLevel == TechLevel.CHAOTIC ? 0xFFB83256 : 0xFFFFFFFF;
+            classicArmor.renderToBuffer(pose, buffers.getBuffer(RenderTypes.armorCutoutNoCull(classicTexture)), light, overlay, color);
+        }
+        bodyParts().forEach(part -> ((ExtendedModelPart) part).render(pose, buffers, light, overlay));
     }
 
     private static ModelPart createEquipmentRoot() {
@@ -178,7 +213,7 @@ public class ModularChestpieceModel<T extends LivingEntity> extends HumanoidMode
         public ChestpieceModelPart(CCModel model, RenderType type, BCShader<?> shader) {
             this.model = model; this.renderType = type; this.shader = shader;
         }
-        protected boolean shouldDraw() { return visible; }
+        protected boolean shouldDraw() { return visible && !classicTiers.contains(techLevel); }
         protected void configureColour() { ToolRenderBase.glUniformBaseColor(shader, techLevel, 1F); }
         @Override
         public void render(PoseStack pose, MultiBufferSource buffers, int light, int overlay, float r, float g, float b, float a) {

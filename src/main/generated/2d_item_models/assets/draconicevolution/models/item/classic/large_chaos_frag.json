@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "draconicevolution:item/classic/large_chaos_frag"
+  }
+}

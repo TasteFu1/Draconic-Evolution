@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/bow",
+  "textures": {
+    "layer0": "draconicevolution:item/tools/draconic_bow_pulling_e0"
+  }
+}

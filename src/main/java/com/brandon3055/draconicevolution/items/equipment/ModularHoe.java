@@ -78,6 +78,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
 
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
 
 import net.minecraft.world.item.context.UseOnContext;
 
@@ -118,7 +119,7 @@ public class ModularHoe extends Item implements IModularTieredItem, IDraconicMel
     private final DETier itemTier;
 
     public ModularHoe(DETier tier, TechProperties props) {
-        super(props.hoe(tier.material(), 0, 0)); // port-26.1.2: HoeItem/Tier удалены -> Item.Properties.tool-компоненты (эталон Items26)
+        super(props.hoe(tier.material(), 0, 0).attributes(ItemAttributeModifiers.EMPTY));
         this.techLevel = props.getTechLevel();
         this.itemTier = tier;
     }

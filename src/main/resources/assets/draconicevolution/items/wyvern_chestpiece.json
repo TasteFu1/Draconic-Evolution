@@ -1,8 +1,21 @@
 {
   "model": {
-    "type": "draconicevolution:modular_tool",
-    "base": "draconicevolution:item/wyvern_chestpiece",
-    "family": "chestpiece",
-    "tier": 1
+    "type": "minecraft:select",
+    "property": "minecraft:display_context",
+    "cases": [
+      {
+        "when": "gui",
+        "model": {
+          "type": "minecraft:model",
+          "model": "draconicevolution:item/gui/wyvern_chestpiece"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "draconicevolution:modular_tool",
+      "base": "draconicevolution:item/wyvern_chestpiece",
+      "family": "chestpiece",
+      "tier": 1
+    }
   }
 }

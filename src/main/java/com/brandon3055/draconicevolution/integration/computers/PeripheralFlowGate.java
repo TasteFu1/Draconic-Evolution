@@ -3,7 +3,7 @@ package com.brandon3055.draconicevolution.integration.computers;
 import com.brandon3055.draconicevolution.blocks.tileentity.flowgate.TileFlowGate;
 import dan200.computercraft.api.lua.LuaFunction;
 import dan200.computercraft.api.peripheral.IPeripheral;
-import net.minecraft.core.Direction;
+import java.util.Set;
 
 public class PeripheralFlowGate implements IPeripheral/*, ICapabilityProvider*/ {
 	
@@ -17,6 +17,11 @@ public class PeripheralFlowGate implements IPeripheral/*, ICapabilityProvider*/ 
 	@Override
 	public String getType() {
 		return "flow_gate";
+	}
+
+	@Override
+	public Set<String> getAdditionalTypes() {
+		return Set.of("flow_gate");
 	}
 
 	@Override

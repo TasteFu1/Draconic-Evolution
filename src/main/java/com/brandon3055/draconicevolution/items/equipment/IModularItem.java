@@ -210,7 +210,7 @@ public interface IModularItem extends IItemExtension, IFusionDataTransfer {
 
     default void addModularItemInformation(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flagIn) {
         if (!Minecraft.getInstance().hasShiftDown()) {
-            tooltip.add(Component.translatable("[Modular Item]").withStyle(ChatFormatting.BLUE));
+            tooltip.add(Component.translatable("modular_item.draconicevolution.label").withStyle(ChatFormatting.BLUE));
         }
 
         ModuleHost host = DECapabilities.getHost(stack); //Closing not required as this is client side read only
