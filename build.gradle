@@ -15,11 +15,20 @@ def dependencyDir = new File(stage, 'deps')
 def coreJar = new File(dependencyDir, "BrandonsCore-${bcore_version}.jar")
 def cclJar = new File(dependencyDir, "codechickenlib-${ccl_version}.jar")
 
-sourceSets.main.resources.srcDir 'src/main/generated'
+def classicRoots = files('src/main/resources/2d_item_models', 'src/main/generated/2d_item_models')
+sourceSets.main.resources {
+    srcDir 'src/main/generated'
+    // Matching assets come from Classic in processResources. Preserve the mod's own pack metadata.
+    exclude { entry ->
+        entry.path.startsWith('assets/') && classicRoots.any { root -> new File(root, entry.path).isFile() }
+    }
+}
+tasks.named('processResources') {
+    from(classicRoots) { include 'assets/**' }
+}
 
 def classicResourcePack = tasks.register('classicResourcePack', Zip) {
-    from 'src/main/resources/2d_item_models'
-    from 'src/main/generated/2d_item_models'
+    from classicRoots
     archiveFileName = "Draconic-Evolution-Classic-16x-${mc_version}.zip"
     destinationDirectory = layout.buildDirectory.dir('distributions')
 }

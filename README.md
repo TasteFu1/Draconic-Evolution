@@ -10,13 +10,13 @@ Use Java 25 and Minecraft **26.1.2** with NeoForge **26.1.2.126**. Place the fol
 
 | File | Provides |
 | --- | --- |
-| `Draconic-Evolution-26.1.2-3.1.4-port.2.jar` | Draconic Evolution |
+| `Draconic-Evolution-26.1.2-3.1.4-port.3.jar` | Draconic Evolution |
 | `BrandonsCore-3.2.1+26.1.2-port.1.jar` | Brandon’s Core |
 | `codechickenlib-4.7.0+26.1.2-port.2.jar` | CodeChicken Lib and its embedded Quack library |
 
 ### Classic 16×16 textures
 
-In **Options → Resource Packs**, enable **Draconic Evolution Classic 16×16** to use pixel-art tools in hand and in the inventory, animated bows, and classic textures for blocks and modules. The pack ships inside the mod. The build also produces a standalone ZIP in `Draconic-Evolution/build/distributions` under the build directory. The 23 modular equipment items use 16×16 sprites. Equipped chestpieces use the standard Minecraft armor shape and its 64×32 texture sheet. The Guardian retains its original entity model.
+Classic 16×16 is the default look from the first launch. The mod includes pixel-art tools in hand and in the inventory, animated bows, and classic textures for blocks and modules. The 23 modular equipment items use 16×16 sprites. Equipped chestpieces use the standard Minecraft armor shape and its 64×32 texture sheet. The build also produces a standalone ZIP in `Draconic-Evolution/build/distributions` under the build directory.
 
 The classic sprites include artwork by enemeez1 and 5284973. The pack includes the source credits and licenses. [Original 16× texture pack](https://www.curseforge.com/minecraft/texture-packs/improved-draconic-evolution-16x-textures/files/2581395)
 
