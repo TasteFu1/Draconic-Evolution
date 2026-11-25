@@ -34,7 +34,7 @@ public class RenderItemChaosShard implements DEItemRenderer {
     private static final RenderType CHAOS_CRYSTAL = RenderType.create(MODID + ":chaos_crystal",
             net.minecraft.client.renderer.rendertype.RenderSetup.builder(
                     com.mojang.blaze3d.pipeline.RenderPipeline.builder(net.minecraft.client.renderer.RenderPipelines.ENTITY_SNIPPET)
-                            .withLocation(MODID + ":pipeline/chaos_crystal_shell")
+                            .withLocation(Identifier.fromNamespaceAndPath(MODID, "pipeline/chaos_crystal_shell"))
                             .withShaderDefine("ALPHA_CUTOUT", 0.1F).withShaderDefine("PER_FACE_LIGHTING")
                             .withSampler("Sampler1").withCull(false)
                             .withVertexFormat(DefaultVertexFormat.ENTITY, VertexFormat.Mode.TRIANGLES)

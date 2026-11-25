@@ -4,6 +4,7 @@ import com.brandon3055.draconicevolution.DraconicEvolution;
 import com.brandon3055.draconicevolution.lib.OPStorageOP;
 import com.google.common.math.BigIntegerMath;
 import net.minecraft.client.resources.language.I18n;
+import net.neoforged.neoforge.transfer.transaction.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
@@ -20,6 +21,35 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 public class OPStorageOPTest {
     public static final Logger LOGGER = LogManager.getLogger("OPStorageOPTest");
+
+    @Test
+    public void nestedEnergyTransfersRestoreOverflowExactly() {
+        OPStorageOP store = new OPStorageOP(null, () -> -1L);
+        BigInteger maximum = BigInteger.valueOf(Long.MAX_VALUE);
+        store.receiveOP(Long.MAX_VALUE, false);
+
+        try (Transaction outer = Transaction.openRoot()) {
+            assertEquals(7, store.insert(7, outer));
+            try (Transaction inner = Transaction.open(outer)) {
+                assertEquals(11, store.extract(11, inner));
+                inner.commit();
+            }
+            assertEquals(maximum.subtract(BigInteger.valueOf(4)), store.getStoredBig());
+        }
+        assertEquals(maximum, store.getStoredBig());
+
+        try (Transaction outer = Transaction.openRoot()) {
+            assertEquals(3, store.insert(3, outer));
+            try (Transaction inner = Transaction.open(outer)) {
+                assertEquals(6, store.extract(6, inner));
+            }
+            assertEquals(3, store.extract(3, outer));
+            outer.commit();
+        }
+        OPStorageOP restored = new OPStorageOP(null, () -> -1L);
+        restored.deserializeNBT(store.serializeNBT());
+        assertEquals(maximum, restored.getStoredBig());
+    }
 
     @Test
     public void testToString() {

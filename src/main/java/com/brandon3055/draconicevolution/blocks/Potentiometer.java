@@ -62,10 +62,7 @@ public class Potentiometer extends EntityBlockBCore {
         return canSupportCenter(worldIn, pos.relative(state.getValue(FACING).getOpposite()), state.getValue(FACING));
     }
 
-    @Override
-    // port-26.1.2: логика перенесена в TilePotentiometer.setRemoved (power-проверке нужен BE);
-    // отклонение: при piston-перемещении (isMoving) старый код пропускал update — в 26 флаг недоступен в setRemoved.
-    void updateNeighborsAfterRemoval(BlockState state, Level world, BlockPos pos) {
+    public void updateNeighborsAfterRemoval(BlockState state, Level world, BlockPos pos) {
         this.updateNeighbors(state, world, pos);
     }
 

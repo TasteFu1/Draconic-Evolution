@@ -14,10 +14,10 @@ import java.util.Map;
 public final class ToolSurfaceRenderTypes {
     private ToolSurfaceRenderTypes() {}
     private static final RenderPipeline GLINT_PIPELINE = RenderPipelines.GLINT.toBuilder()
-            .withLocation("draconicevolution:pipeline/tool_glint")
+            .withLocation(Identifier.fromNamespaceAndPath("draconicevolution", "pipeline/tool_glint"))
             .withVertexFormat(DefaultVertexFormat.POSITION_TEX, VertexFormat.Mode.TRIANGLES).build();
     private static final RenderPipeline OUTLINE_PIPELINE = RenderPipelines.OUTLINE_NO_CULL.toBuilder()
-            .withLocation("draconicevolution:pipeline/tool_outline")
+            .withLocation(Identifier.fromNamespaceAndPath("draconicevolution", "pipeline/tool_outline"))
             .withVertexFormat(DefaultVertexFormat.POSITION_TEX_COLOR, VertexFormat.Mode.TRIANGLES).build();
     public static final RenderType GLINT = RenderType.create("de_tool_glint", RenderSetup.builder(GLINT_PIPELINE)
             .withTexture("Sampler0", ItemFeatureRenderer.ENCHANTED_GLINT_ITEM)

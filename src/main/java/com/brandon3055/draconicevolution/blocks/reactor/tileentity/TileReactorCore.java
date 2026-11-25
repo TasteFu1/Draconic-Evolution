@@ -47,6 +47,7 @@ import java.util.Iterator;
 import java.util.Locale;
 
 import java.util.Map;
+import java.util.Optional;
 
 import javax.annotation.Nullable;
 
@@ -57,6 +58,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 
 import net.minecraft.core.BlockPos;
+import net.neoforged.neoforge.transfer.transaction.SnapshotJournal;
+import net.neoforged.neoforge.transfer.transaction.TransactionContext;
 
 import net.minecraft.core.Direction.Axis;
 
@@ -98,9 +101,7 @@ import net.minecraft.world.level.block.state.BlockState;
 
 import net.minecraft.world.phys.AABB;
 
-import net.neoforged.api.distmarker.Dist;
 
-import net.neoforged.api.distmarker.OnlyIn;
 
 
 
@@ -648,7 +649,6 @@ public class TileReactorCore extends TileBCore implements MenuProvider {
         }
     }
 
-    @OnlyIn (Dist.CLIENT)
     @Override
     public void receivePacketFromServer(MCDataInput data, int id) {
         if (id == 1) {
@@ -999,43 +999,91 @@ public class TileReactorCore extends TileBCore implements MenuProvider {
 
     //region ################# Other Logic ##################
 
+    private record EnergyState(double shield, long saturation, double temperature) {}
+
+    // Injector and stabilizer capabilities on every component address this same reactor.
+    // Managed fields notify listeners, so only publish them once the root transaction commits.
+    private EnergyState pendingEnergy;
+    private final SnapshotJournal<Optional<EnergyState>> energyJournal = new SnapshotJournal<>() {
+        @Override protected Optional<EnergyState> createSnapshot() { return Optional.ofNullable(pendingEnergy); }
+        @Override protected void revertToSnapshot(Optional<EnergyState> state) { pendingEnergy = state.orElse(null); }
+        @Override protected void onRootCommit(Optional<EnergyState> original) {
+            EnergyState committed = pendingEnergy;
+            pendingEnergy = null;
+            publishEnergy(committed);
+        }
+    };
+
+    private EnergyState energyState() {
+        return pendingEnergy != null ? pendingEnergy : new EnergyState(shieldCharge.get(), saturation.get(), temperature.get());
+    }
+
+    private void publishEnergy(EnergyState state) {
+        shieldCharge.set(state.shield);
+        saturation.set(state.saturation);
+        temperature.set(state.temperature);
+    }
+
+    private void storeEnergy(EnergyState state, TransactionContext transaction) {
+        if (transaction == null) {
+            publishEnergy(state);
+        } else {
+            energyJournal.updateSnapshots(transaction);
+            pendingEnergy = state;
+        }
+    }
+
+    long availableOutput() {
+        return reactorState.get() == ReactorState.RUNNING ? Math.max(0, energyState().saturation) : 0;
+    }
+
+    long extractEnergy(long amount, boolean simulate, TransactionContext transaction) {
+        long extracted = Math.min(availableOutput(), amount);
+        if (extracted <= 0) return 0;
+        if (!simulate) {
+            EnergyState state = energyState();
+            storeEnergy(new EnergyState(state.shield, state.saturation - extracted, state.temperature), transaction);
+        }
+        return extracted;
+    }
+
     public long injectEnergy(long energy) {
-        long received = 0;
-        if (reactorState.get() == ReactorState.WARMING_UP) {
-            if (!startupInitialized.get()) {
+        return injectEnergy(energy, false, null);
+    }
+
+    long injectEnergy(long energy, boolean simulate, TransactionContext transaction) {
+        if (energy <= 0) return 0;
+        EnergyState state = energyState();
+        double shield = state.shield;
+        long saturation = state.saturation;
+        double temperature = state.temperature;
+        long received;
+        if (reactorState.get() == ReactorState.WARMING_UP && startupInitialized.get()) {
+            double shieldTarget = maxShieldCharge.get() / 2;
+            long saturationTarget = maxSaturation.get() / 2;
+            if (shield < shieldTarget) {
+                received = Math.min(energy, (long) shieldTarget - (long) shield + 1);
+                shield = Math.min(shieldTarget, shield + received);
+            } else if (saturation < saturationTarget) {
+                received = Math.min(energy, saturationTarget - saturation);
+                saturation += received;
+            } else if (temperature < 2000) {
+                received = energy;
+                temperature = Math.min(2500, temperature + received / (1000D + reactableFuel.get() * 10));
+            } else {
                 return 0;
             }
-            if (shieldCharge.get() < (maxShieldCharge.get() / 2)) {
-                received = Math.min(energy, (int) (maxShieldCharge.get() / 2) - (int) shieldCharge.get() + 1);
-                shieldCharge.add((double) received);
-                if (shieldCharge.get() > (maxShieldCharge.get() / 2)) {
-                    shieldCharge.set(maxShieldCharge.get() / 2);
-                }
-            } else if (saturation.get() < (maxSaturation.get() / 2)) {
-                received = Math.min(energy, (maxSaturation.get() / 2) - saturation.get());
-                saturation.add(received);
-            } else if (temperature.get() < 2000) {
-                received = energy;
-                temperature.add((double) received / (1000D + (reactableFuel.get() * 10)));
-                if (temperature.get() > 2500) {
-                    temperature.set(2500D);
-                }
-            }
         } else if (reactorState.get() == ReactorState.RUNNING || reactorState.get() == ReactorState.STOPPING) {
-            double tempFactor = 1;
-
-            //If the temperature goes past 15000 force the shield to drain by the time it hits 25000 regardless of input.
-            if (temperature.get() > 15000) {
-                tempFactor = 1D - Math.min(1, (temperature.get() - 15000D) / 10000D);
+            double maximum = maxShieldCharge.get();
+            double tempFactor = 1 - Math.clamp((temperature - 15000) / 10000, 0D, 1D);
+            if (maximum > 0) {
+                shield = Math.min(maximum, shield + Math.min(energy * (1 - shield / maximum), maximum - shield) * tempFactor);
             }
-
-            shieldCharge.add(Math.min((energy * (1D - (shieldCharge.get() / maxShieldCharge.get()))), maxShieldCharge.get() - shieldCharge.get()) * tempFactor);
-            if (shieldCharge.get() > maxShieldCharge.get()) {
-                shieldCharge.set(maxShieldCharge.get());
-            }
-
-            return energy;
+            received = energy;
+        } else {
+            return 0;
         }
+        if (!simulate) storeEnergy(new EnergyState(shield, saturation, temperature), transaction);
         return received;
     }
 
@@ -1157,7 +1205,6 @@ public class TileReactorCore extends TileBCore implements MenuProvider {
             return shieldActive;
         }
 
-        @OnlyIn (Dist.CLIENT)
         public Component localize() {
             ChatFormatting[] colours = {ChatFormatting.RED, ChatFormatting.DARK_AQUA, ChatFormatting.LIGHT_PURPLE, ChatFormatting.GREEN, ChatFormatting.LIGHT_PURPLE, ChatFormatting.LIGHT_PURPLE, ChatFormatting.DARK_RED};
             return Component.translatable("gui.reactor.status." + name().toLowerCase(Locale.ENGLISH) + ".info").withStyle(colours[ordinal()]);

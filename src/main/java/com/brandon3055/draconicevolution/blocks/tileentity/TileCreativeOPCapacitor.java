@@ -2,7 +2,9 @@ package com.brandon3055.draconicevolution.blocks.tileentity;
 
 import com.brandon3055.brandonscore.BrandonsCore;
 
-import com.brandon3055.brandonscore.api.power.IOPStorage;
+import com.brandon3055.draconicevolution.lib.TransactionalOPStorage;
+import net.neoforged.neoforge.transfer.TransferPreconditions;
+import net.neoforged.neoforge.transfer.transaction.TransactionContext;
 
 import com.brandon3055.brandonscore.blocks.TileBCore;
 
@@ -54,7 +56,19 @@ public class TileCreativeOPCapacitor extends TileBCore implements IInteractTile 
     public TileCreativeOPCapacitor(BlockPos pos, BlockState state) {
         super(DEContent.TILE_CREATIVE_OP_CAPACITOR.get(), pos, state);
 
-        capManager.set(CapabilityOP.OP, new IOPStorage() {
+        capManager.set(CapabilityOP.OP, new TransactionalOPStorage() {
+            @Override
+            public int insert(int amount, TransactionContext transaction) {
+                TransferPreconditions.checkNonNegative(amount);
+                return receiveEnergy(amount, true);
+            }
+
+            @Override
+            public int extract(int amount, TransactionContext transaction) {
+                TransferPreconditions.checkNonNegative(amount);
+                return extractEnergy(amount, true);
+            }
+
             @Override
             public int receiveEnergy(int maxReceive, boolean simulate) {
                 return (int) Math.min(maxReceive, powerRate.get());

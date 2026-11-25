@@ -23,6 +23,11 @@ import com.brandon3055.draconicevolution.items.equipment.IModularEnergyItem;
 import com.brandon3055.draconicevolution.items.equipment.IModularItem;
 import com.brandon3055.draconicevolution.lib.DumData;
 import net.covers1624.quack.util.CrashLock;
+import net.neoforged.neoforge.transfer.TransferPreconditions;
+import net.neoforged.neoforge.transfer.transaction.TransactionContext;
+import net.neoforged.neoforge.transfer.access.ItemAccess;
+import net.neoforged.neoforge.transfer.energy.EnergyHandler;
+import net.neoforged.neoforge.transfer.item.ItemResource;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.IEventBus;
@@ -58,6 +63,42 @@ public class CapabilityData {
         return storage;
     }
 
+    private record ModularItemEnergy(Item validItem, ItemAccess access) implements EnergyHandler {
+        @Override
+        public long getAmountAsLong() {
+            ItemResource current = access.getResource();
+            return current.is(validItem) ? getEnergyCap(current.toStack()).getOPStored() : 0;
+        }
+
+        @Override
+        public long getCapacityAsLong() {
+            ItemResource current = access.getResource();
+            return current.is(validItem) ? getEnergyCap(current.toStack()).getMaxOPStored() : 0;
+        }
+
+        @Override
+        public int insert(int amount, TransactionContext transaction) {
+            return transfer(amount, transaction, true);
+        }
+
+        @Override
+        public int extract(int amount, TransactionContext transaction) {
+            return transfer(amount, transaction, false);
+        }
+
+        private int transfer(int amount, TransactionContext transaction, boolean insert) {
+            TransferPreconditions.checkNonNegative(amount);
+            ItemResource current = access.getResource();
+            if (amount == 0 || !current.is(validItem)) return 0;
+            ItemStack updated = current.toStack();
+            ModularOPStorage storage = getEnergyCap(updated);
+            int moved = (int) (insert ? storage.receiveOP(amount, false) : storage.extractOP(amount, false));
+            if (moved <= 0) return 0;
+            ItemResource next = ItemResource.of(updated);
+            return current.equals(next) ? moved : access.exchange(next, 1, transaction) * moved;
+        }
+    }
+
     public static void init(IEventBus modBus) {
         LOCK.lock();
         modBus.addListener(CapabilityData::register);
@@ -71,7 +112,7 @@ public class CapabilityData {
                 event.registerItem(DECapabilities.Host.ITEM, (stack, v) -> getItemHostCap(stack), item);
                 if (item instanceof IModularEnergyItem modularEnergyItem) {
                     event.registerItem(CapabilityOP.ITEM, (stack, v) -> getEnergyCap(stack), item);
-                    event.registerItem(Capabilities.Energy.ITEM, (stack, v) -> getEnergyCap(stack), item);
+                    event.registerItem(Capabilities.Energy.ITEM, (stack, access) -> new ModularItemEnergy(item, access), item);
                 }
             }
             if (item instanceof IDEEquipment) {

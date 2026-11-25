@@ -22,7 +22,7 @@ import java.util.stream.Stream;
  * Created by brandon3055 on 20/08/2023
  */
 public class MultiModAtlasHolder implements PreparableReloadListener, AutoCloseable {
-    private final TextureAtlas textureAtlas;
+    private TextureAtlas textureAtlas;
     private final Identifier atlasLocation;
     private final Identifier atlasInfoLocation;
     private final Set<String> modIds;
@@ -41,6 +41,10 @@ public class MultiModAtlasHolder implements PreparableReloadListener, AutoClosea
         this.modIds = modIds;
         this.atlasInfoLocation = Identifier.fromNamespaceAndPath(hostModId, atlasInfoLocation);
         this.atlasLocation = Identifier.fromNamespaceAndPath(hostModId, atlasLocation);
+    }
+
+    public void init() {
+        if (textureAtlas != null) return;
         this.textureAtlas = new TextureAtlas(this.atlasLocation);
         Minecraft.getInstance().getTextureManager().register(this.textureAtlas.location(), this.textureAtlas);
     }

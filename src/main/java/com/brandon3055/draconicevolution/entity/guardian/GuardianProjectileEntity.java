@@ -102,7 +102,7 @@ public class GuardianProjectileEntity extends AbstractHurtingProjectile {
             if (df <= 0) {
                 continue;
             }
-            df *= Explosion.getSeenPercent(position(), entity);
+            df *= net.minecraft.world.level.ServerExplosion.getSeenPercent(position(), entity);
             float damage = (float) ((int) ((df * df + df) / 2.0D * 6.0D * power + 1.0D));
             entity.hurt(DEDamage.guardianProjectile(level(), this, shooter), damage);
         }
@@ -132,7 +132,7 @@ public class GuardianProjectileEntity extends AbstractHurtingProjectile {
 
     @Override
     protected ParticleOptions getTrailParticle() {
-        return new SimpleParticleType(ParticleTypes.DRAGON_BREATH.value());
+        return net.minecraft.core.particles.PowerParticleOption.create(ParticleTypes.DRAGON_BREATH, 1.0F);
     }
 
     @Override

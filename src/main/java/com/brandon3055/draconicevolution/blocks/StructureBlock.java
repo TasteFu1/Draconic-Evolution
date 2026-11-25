@@ -64,9 +64,7 @@ import net.minecraft.world.phys.shapes.Shapes;
 
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-import net.neoforged.api.distmarker.Dist;
 
-import net.neoforged.api.distmarker.OnlyIn;
 
 import net.neoforged.neoforge.common.CommonHooks;
 
@@ -101,7 +99,7 @@ public class StructureBlock extends EntityBlockBCore implements StructurePart, C
     }
 
     @Override
-    public void neighborChanged(BlockState state, Level world, BlockPos pos, Block blockIn, BlockPos fromPos, Orientation orientation, boolean isMoving) {
+    public void neighborChanged(BlockState state, Level world, BlockPos pos, Block blockIn, Orientation orientation, boolean isMoving) {
         neighborChanged(world, pos);
     }
 
@@ -220,9 +218,8 @@ public class StructureBlock extends EntityBlockBCore implements StructurePart, C
     }
 
     @Override
-    @OnlyIn(Dist.CLIENT)
     public boolean renderSelectionBox(ExtractBlockOutlineRenderStateEvent event, Level level) {
-        if (level.getBlockEntity(event.getTarget().getBlockPos()) instanceof TileStructureBlock tile) {
+        if (level.getBlockEntity(event.getBlockPos()) instanceof TileStructureBlock tile) {
             return tile.renderSelectionBox(event);
         }
         return true;

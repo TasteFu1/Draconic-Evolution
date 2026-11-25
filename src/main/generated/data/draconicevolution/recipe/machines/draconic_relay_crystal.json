@@ -1,7 +1,7 @@
 {
   "type": "draconicevolution:fusion_crafting",
   "catalyst": {
-    "type": "draconicevolution:stack",
+    "neoforge:ingredient_type": "draconicevolution:stack",
     "count": 4,
     "items": "draconicevolution:wyvern_relay_crystal"
   },

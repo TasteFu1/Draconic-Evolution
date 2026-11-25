@@ -6,6 +6,7 @@ import com.brandon3055.brandonscore.blocks.EntityBlockBCore;
 import com.brandon3055.draconicevolution.blocks.tileentity.TileFusionCraftingCore;
 import com.brandon3055.draconicevolution.init.DEContent;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -33,7 +34,7 @@ public class FusionCraftingCore extends EntityBlockBCore {
     }
 
     @Override
-    public void neighborChanged(BlockState state, Level world, BlockPos pos, Block blockIn, BlockPos fromPos, Orientation orientation, boolean isMoving) {
+    public void neighborChanged(BlockState state, Level world, BlockPos pos, Block blockIn, Orientation orientation, boolean isMoving) {
         if (!world.isClientSide()) {
             if (isBlockPowered(world, pos)) {
                 BlockEntity tile = world.getBlockEntity(pos);
@@ -50,11 +51,11 @@ public class FusionCraftingCore extends EntityBlockBCore {
     }
 
     @Override
-    public int getAnalogOutputSignal(BlockState blockState, Level worldIn, BlockPos pos) {
+    public int getAnalogOutputSignal(BlockState blockState, Level worldIn, BlockPos pos, Direction direction) {
         BlockEntity tile = worldIn.getBlockEntity(pos);
         if (tile instanceof TileFusionCraftingCore) {
             return ((TileFusionCraftingCore) tile).getComparatorOutput();
         }
-        return super.getAnalogOutputSignal(blockState, worldIn, pos);
+        return super.getAnalogOutputSignal(blockState, worldIn, pos, direction);
     }
 }

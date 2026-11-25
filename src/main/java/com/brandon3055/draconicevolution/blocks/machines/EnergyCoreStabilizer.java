@@ -103,7 +103,6 @@ public class EnergyCoreStabilizer extends EntityBlockBCore {
         }
     }
 
-    // port-26.1.2: BE-логика перенесена в TileEnergyCoreStabilizer.setRemoved (см.)
 
 
     //endregion

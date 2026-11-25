@@ -1,13 +1,12 @@
 package com.brandon3055.draconicevolution.entity.guardian.control;
 
 import codechicken.lib.vec.Vector3;
-import com.brandon3055.draconicevolution.client.sound.SimpleSoundImpl;
+import com.brandon3055.draconicevolution.client.GuardianPhaseEffects;
 import com.brandon3055.draconicevolution.entity.guardian.DraconicGuardianEntity;
 import com.brandon3055.draconicevolution.entity.guardian.GuardianFightManager;
 import com.brandon3055.draconicevolution.handlers.DESounds;
 import com.brandon3055.draconicevolution.init.DEDamage;
 import com.brandon3055.draconicevolution.network.DraconicNetwork;
-import net.minecraft.client.Minecraft;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.damagesource.DamageSource;
@@ -17,8 +16,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -129,7 +126,7 @@ public class LaserBeamPhase extends ChargeUpPhase {
         List<Player> targetOptions = guardian.level().players()
                 .stream()
                 .filter(e -> e.distanceToSqr(focus) <= 200 * 200)
-                .filter(e -> StartPhase.AGRO_TARGETS.test(guardian, e))
+                .filter(e -> StartPhase.AGRO_TARGETS.test((net.minecraft.server.level.ServerLevel) guardian.level(), guardian, e))
                 .collect(Collectors.toList());
 
         if (targetOptions.isEmpty()) {
@@ -146,28 +143,15 @@ public class LaserBeamPhase extends ChargeUpPhase {
     }
 
     @Override
-    @OnlyIn (Dist.CLIENT)
     public void clientTick() {
         super.clientTick();
         if (isCharged() && !soundInitialized) {
             soundInitialized = true;
-            SimpleSoundImpl.create(DESounds.BEAM.get(), SoundSource.HOSTILE, random)
-                    .setPitchSupplier(() -> 0.5F + getBeamCharge())
-                    .setStoppedSupplier(this::isEnded)
-                    .setPos(guardian)
-                    .setVolume(100)
-                    .loop()
-                    .play(Minecraft.getInstance());
+            GuardianPhaseEffects.playBeam(guardian, random, () -> 0.5F + getBeamCharge(), this::isEnded);
         }
         if (fireSecondary() && !secondarySoundInit) {
             secondarySoundInit = true;
-            SimpleSoundImpl.create(DESounds.BEAM.get(), SoundSource.HOSTILE, random)
-                    .setPitchSupplier(() -> 1.5F + (getSecondaryCharge() / 2F))
-                    .setStoppedSupplier(this::isEnded)
-                    .setPos(guardian)
-                    .setVolume(100)
-                    .loop()
-                    .play(Minecraft.getInstance());
+            GuardianPhaseEffects.playBeam(guardian, random, () -> 1.5F + (getSecondaryCharge() / 2F), this::isEnded);
         }
     }
 

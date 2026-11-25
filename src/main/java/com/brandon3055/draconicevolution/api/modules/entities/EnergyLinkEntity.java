@@ -28,8 +28,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
@@ -190,7 +188,6 @@ public class EnergyLinkEntity extends ModuleEntity<EnergyLinkData> {
     }
 
     @Override
-    @OnlyIn (Dist.CLIENT)
     public void renderModule(GuiElement<?> parent, GuiRender render, int x, int y, int width, int height, double mouseX, double mouseY, boolean stackRender, float partialTicks) {
         super.renderModule(parent, render, x, y, width, height, mouseX, mouseY, stackRender, partialTicks);
 
@@ -230,7 +227,7 @@ public class EnergyLinkEntity extends ModuleEntity<EnergyLinkData> {
             list.add(Component.translatable("module.draconicevolution.energy_link.linked_core")
                     .withStyle(ChatFormatting.GRAY)
                     .append(": ")
-                    .append(Component.literal("X:" + gPos.pos().getX() + ", Y:" + gPos.pos().getY() + ", Z:" + gPos.pos().getZ() + ", " + gPos.dimension().location()).withStyle(ChatFormatting.DARK_GREEN)));
+                    .append(Component.literal("X:" + gPos.pos().getX() + ", Y:" + gPos.pos().getY() + ", Z:" + gPos.pos().getZ() + ", " + gPos.dimension().identifier()).withStyle(ChatFormatting.DARK_GREEN)));
         } else {
             list.add(Component.translatable("module.draconicevolution.energy_link.link_to_core").withStyle(ChatFormatting.GRAY));
         }

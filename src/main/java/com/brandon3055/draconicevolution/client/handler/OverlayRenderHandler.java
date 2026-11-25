@@ -24,25 +24,20 @@ public class OverlayRenderHandler {
         NeoForge.EVENT_BUS.addListener(OverlayRenderHandler::renderLevelStage);
     }
 
-    public static void renderLevelStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) {
-            return;
-        }
-        ClientEventHandler.MODELVIEW.set(event.getPoseStack().last().pose());
-        ClientEventHandler.PROJECTION.set(event.getProjectionMatrix());
+    public static void renderLevelStage(RenderLevelStageEvent.AfterTranslucentParticles event) {
 
         LocalPlayer player = Minecraft.getInstance().player;
         if (player == null) return;
-        Level world = player.getCommandSenderWorld();
+        Level world = player.level();
         ItemStack stack = player.getMainHandItem();
         ItemStack offStack = player.getOffhandItem();
         Minecraft mc = Minecraft.getInstance();
-        float partialTicks = event.getPartialTick().getGameTimeDeltaPartialTick(false);
+        float partialTicks = mc.getDeltaTracker().getGameTimeDeltaPartialTick(false);
 
         try {
             if (!stack.isEmpty() && stack.getItem() instanceof ICrystalBinder) {
                 BinderHandler.renderWorldOverlay(player, event.getPoseStack(), world, stack, mc, partialTicks);
-            } else if (!stack.isEmpty() && offStack.getItem() instanceof ICrystalBinder) {
+            } else if (!offStack.isEmpty() && offStack.getItem() instanceof ICrystalBinder) {
                 BinderHandler.renderWorldOverlay(player, event.getPoseStack(), world, offStack, mc, partialTicks);
             }
         } catch (Throwable e) {

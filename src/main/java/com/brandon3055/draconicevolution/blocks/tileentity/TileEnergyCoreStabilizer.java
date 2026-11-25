@@ -64,9 +64,7 @@ import net.minecraft.world.phys.shapes.Shapes;
 
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-import net.neoforged.api.distmarker.Dist;
 
-import net.neoforged.api.distmarker.OnlyIn;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -300,7 +298,7 @@ public class TileEnergyCoreStabilizer extends TileBCore implements IInteractTile
         }
         BlockPos offset = worldPosition.subtract(core.getBlockPos());
         coreOffset.set(offset);
-        coreDirection.set(Direction.getNearest(offset.getX(), offset.getY(), offset.getZ()).getOpposite());
+        coreDirection.set(Direction.getNearest(offset, Direction.NORTH).getOpposite());
     }
 
     // ### Tick / Rendering
@@ -328,7 +326,6 @@ public class TileEnergyCoreStabilizer extends TileBCore implements IInteractTile
         }
     }
 
-    @OnlyIn (Dist.CLIENT)
     private void updateVisual() {
         Vec3D spawn = new Vec3D(worldPosition);
         spawn.add(0.5, 0.5, 0.5);
@@ -415,19 +412,15 @@ public class TileEnergyCoreStabilizer extends TileBCore implements IInteractTile
 
 
 
-    // port-26.1.2: BlockBehaviour.onRemove удалён в 26 — логика перенесена сюда;
-    // срабатывает при удалении BE из-за смены блока (guard отличает выгрузку чанка).
     @Override
-    public void setRemoved() {
-        super.setRemoved();
-        if (level() instanceof ServerLevel sl && sl.getBlockState(worldPosition).getBlock() != getBlockState().getBlock()) {
-            if (isValidMultiBlock.get()) {
-                revertStructure();
-            }
-            TileEnergyCore core = getCore();
-            if (core != null) {
-                validateStructure();
-            }
+    public void preRemoveSideEffects(BlockPos pos, BlockState state) {
+        super.preRemoveSideEffects(pos, state);
+        if (isValidMultiBlock.get()) {
+            revertStructure();
+        }
+        TileEnergyCore core = getCore();
+        if (core != null) {
+            validateStructure();
         }
     }
 }

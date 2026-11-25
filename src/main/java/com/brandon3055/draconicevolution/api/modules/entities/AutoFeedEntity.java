@@ -67,9 +67,7 @@ import net.minecraft.world.item.ItemStack;
 
 import net.minecraft.world.item.TooltipFlag;
 
-import net.neoforged.api.distmarker.Dist;
 
-import net.neoforged.api.distmarker.OnlyIn;
 
 
 import com.brandon3055.draconicevolution.lib.DEStreamCodecs; // port-26.1.2: BCStreamCodec удалён из BC-26
@@ -145,7 +143,7 @@ public class AutoFeedEntity extends ModuleEntity<AutoFeedData> {
                                 double rem = getStoredFood() + val - data.foodStorage();
                                 if (rem <= val * 0.25) {
                                     setStoredFood((float) Math.min(getStoredFood() + val, data.foodStorage()));
-                                    entity.level().playSound(null, entity.blockPosition(), SoundEvents.GENERIC_EAT, SoundSource.PLAYERS, 0.25F, (0.95F + (entity.level().getRandom().nextFloat() * 0.1F)));
+                                    entity.level().playSound(null, entity.blockPosition(), SoundEvents.GENERIC_EAT.value(), SoundSource.PLAYERS, 0.25F, (0.95F + (entity.level().getRandom().nextFloat() * 0.1F)));
                                     stack.shrink(1);
                                     break;
                                 }
@@ -175,7 +173,6 @@ public class AutoFeedEntity extends ModuleEntity<AutoFeedData> {
     }
 
     @Override
-    @OnlyIn(Dist.CLIENT)
     public void renderModule(GuiElement<?> parent, GuiRender render, int x, int y, int width, int height, double mouseX, double mouseY, boolean renderStack, float partialTicks) {
         super.renderModule(parent, render, x, y, width, height, mouseX, mouseY, renderStack, partialTicks);
         AutoFeedData data = module.getData();
@@ -201,7 +198,6 @@ public class AutoFeedEntity extends ModuleEntity<AutoFeedData> {
     }
 
     @Override
-    @OnlyIn(Dist.CLIENT)
     public void addHostHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         if (Minecraft.getInstance().hasShiftDown()) {
             tooltip.add(Component.translatable("module.draconicevolution.auto_feed.stored").withStyle(ChatFormatting.GRAY).append(" ").append(Component.translatable("module.draconicevolution.auto_feed.stored.value", (int)getStoredFood()).withStyle(ChatFormatting.DARK_GREEN)));

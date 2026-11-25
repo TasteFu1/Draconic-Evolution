@@ -1,6 +1,8 @@
 package com.brandon3055.draconicevolution.blocks.reactor.tileentity;
 
-import com.brandon3055.brandonscore.api.power.IOPStorage;
+import com.brandon3055.draconicevolution.lib.TransactionalOPStorage;
+import net.neoforged.neoforge.transfer.TransferPreconditions;
+import net.neoforged.neoforge.transfer.transaction.TransactionContext;
 
 import com.brandon3055.brandonscore.capability.CapabilityOP;
 
@@ -53,8 +55,8 @@ public class TileReactorStabilizer extends TileReactorComponent {
         }
     }
 
-    private class OPExtractor implements IOPStorage {
-        private TileReactorStabilizer tile;
+    private static class OPExtractor implements TransactionalOPStorage {
+        private final TileReactorStabilizer tile;
 
         public OPExtractor(TileReactorStabilizer tile) {
             this.tile = tile;
@@ -62,15 +64,26 @@ public class TileReactorStabilizer extends TileReactorComponent {
 
         @Override
         public long extractOP(long maxExtract, boolean simulate) {
-            TileReactorCore core = getCachedCore();
-            if (core != null && core.reactorState.get() == TileReactorCore.ReactorState.RUNNING) {
-                long subtracted = Math.min(core.saturation.get(), maxExtract);
-                if (!simulate) {
-                    core.saturation.subtract(subtracted);
-                }
-                return subtracted;
-            }
+            TileReactorCore core = tile.getCachedCore();
+            return core == null ? 0 : core.extractEnergy(maxExtract, simulate, null);
+        }
 
+        @Override
+        public long getAmountAsLong() {
+            TileReactorCore core = tile.getCachedCore();
+            return core == null ? 0 : core.availableOutput();
+        }
+
+        @Override
+        public int extract(int amount, TransactionContext transaction) {
+            TransferPreconditions.checkNonNegative(amount);
+            TileReactorCore core = tile.getCachedCore();
+            return core == null ? 0 : (int) core.extractEnergy(amount, false, transaction);
+        }
+
+        @Override
+        public int insert(int amount, TransactionContext transaction) {
+            TransferPreconditions.checkNonNegative(amount);
             return 0;
         }
 

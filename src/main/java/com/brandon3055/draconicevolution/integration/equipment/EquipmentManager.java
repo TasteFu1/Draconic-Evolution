@@ -53,6 +53,8 @@ public abstract class EquipmentManager implements IEquipmentManager {
         return "";
     }
 
+    protected abstract void registerCap(RegisterCapabilitiesEvent event, Item item);
+
     public static void registerCapability(RegisterCapabilitiesEvent event, Item item) {
         if (instance != null) {
             if (!(item instanceof IDEEquipment)) {

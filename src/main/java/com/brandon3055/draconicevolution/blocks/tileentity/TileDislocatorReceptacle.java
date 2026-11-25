@@ -8,7 +8,7 @@ import com.brandon3055.brandonscore.blocks.TileBCore;
 
 import com.brandon3055.brandonscore.capability.CapabilityOP;
 
-import com.brandon3055.brandonscore.inventory.TileItemStackHandler;
+import com.brandon3055.draconicevolution.inventory.ManagedItemHandler;
 
 import com.brandon3055.brandonscore.lib.DelayedTask;
 
@@ -112,9 +112,7 @@ import net.minecraft.world.phys.BlockHitResult;
 
 import net.minecraft.world.phys.Vec3;
 
-import net.neoforged.api.distmarker.Dist;
 
-import net.neoforged.api.distmarker.OnlyIn;
 
 import net.neoforged.neoforge.capabilities.Capabilities;
 
@@ -137,22 +135,28 @@ public class TileDislocatorReceptacle extends TileBCore implements IInteractTile
     public final ManagedByte linkedFlowRate = register(new ManagedByte("linked_flow_rate", 0, DataFlags.SYNC_TILE));
     public final ManagedPos crystalLinkPos = register(new ManagedPos("crystal_link_pos", (BlockPos) null, DataFlags.SAVE_NBT_SYNC_TILE));
 
-    public TileItemStackHandler itemHandler = new TileItemStackHandler(this, 1);
+    public ManagedItemHandler itemHandler = new ManagedItemHandler(this, 1);
     private PortalHelper portalHelper = new PortalHelper(this);
     //A que is used to get around the issue of an entity touching multiple portal blocks simultaneously and getting teleported more than once.
     private List<Entity> teleportQ = new ArrayList<>();
 
     public TileDislocatorReceptacle(BlockPos pos, BlockState state) {
         super(DEContent.TILE_DISLOCATOR_RECEPTACLE.get(), pos, state);
-        capManager.setManaged("inventory", Capabilities.Item.BLOCK, itemHandler).saveBoth().syncTile();
+        capManager.setInternalManaged("inventory", Capabilities.Item.BLOCK, itemHandler).saveBoth().syncTile();
         itemHandler.setContentsChangeListener(e -> onInventoryChange());
         itemHandler.setSlotValidator(0, (stack) -> stack.getItem() instanceof Dislocator);
         fxHandler = DraconicEvolution.proxy.createENetFXHandler(this);
     }
 
+    @Override
+    public void setLevel(net.minecraft.world.level.Level level) {
+        super.setLevel(level);
+        itemHandler.loadPending();
+    }
+
     public static void register(RegisterCapabilitiesEvent event) {
         com.brandon3055.brandonscore.capability.CapabilityOP.registerBlockEntity(event, DEContent.TILE_DISLOCATOR_RECEPTACLE.get());
-        capability(event, DEContent.TILE_DISLOCATOR_RECEPTACLE, Capabilities.Item.BLOCK);
+        event.registerBlockEntity(Capabilities.Item.BLOCK, DEContent.TILE_DISLOCATOR_RECEPTACLE.get(), (tile, side) -> tile.itemHandler.automation);
     }
 
     @Override
@@ -165,9 +169,10 @@ public class TileDislocatorReceptacle extends TileBCore implements IInteractTile
     }
 
     @Override
-    public InteractionResult useItemOn(ItemStack stack, BlockState state, Player player, InteractionHand hand, BlockHitResult hit) {
+    public InteractionResult onBlockUse(BlockState state, Player player, InteractionHand hand, BlockHitResult hit) {
+        ItemStack stack = player.getItemInHand(hand);
         if (hasRSSignal()) {
-            return InteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            return InteractionResult.PASS;
         }
 
         if (stack.getItem() == DEContent.INFUSED_OBSIDIAN.get().asItem()) {
@@ -649,7 +654,6 @@ public class TileDislocatorReceptacle extends TileBCore implements IInteractTile
     }
 
     @Override
-    @OnlyIn(Dist.CLIENT)
     public ENetFXHandler createClientFXHandler() {
         return new ENetFXHandlerClient(this);
     }
@@ -687,13 +691,9 @@ public class TileDislocatorReceptacle extends TileBCore implements IInteractTile
     }
 
 
-    // port-26.1.2: BlockBehaviour.onRemove удалён в 26 — логика перенесена сюда;
-    // срабатывает при удалении BE из-за смены блока (guard отличает выгрузку чанка).
     @Override
-    public void setRemoved() {
-        super.setRemoved();
-        if (level() instanceof ServerLevel sl && sl.getBlockState(worldPosition).getBlock() != getBlockState().getBlock()) {
-            deactivate();
-        }
+    public void preRemoveSideEffects(BlockPos pos, BlockState state) {
+        super.preRemoveSideEffects(pos, state);
+        deactivate();
     }
 }

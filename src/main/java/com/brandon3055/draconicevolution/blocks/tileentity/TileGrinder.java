@@ -2,7 +2,6 @@ package com.brandon3055.draconicevolution.blocks.tileentity;
 
 import codechicken.lib.data.MCDataInput;
 
-import codechicken.lib.inventory.InventoryUtils;
 
 import codechicken.lib.math.MathHelper;
 
@@ -12,7 +11,7 @@ import com.brandon3055.brandonscore.blocks.TileBCore;
 
 import com.brandon3055.brandonscore.capability.CapabilityOP;
 
-import com.brandon3055.brandonscore.inventory.TileItemStackHandler;
+import com.brandon3055.draconicevolution.inventory.ManagedItemHandler;
 
 import com.brandon3055.brandonscore.lib.IInteractTile;
 
@@ -108,7 +107,8 @@ import net.neoforged.neoforge.common.util.FakePlayer;
 
 import net.neoforged.neoforge.common.util.FakePlayerFactory;
 
-import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.transfer.item.ItemResource;
+import net.neoforged.neoforge.transfer.transaction.Transaction;
 
 
 
@@ -122,8 +122,9 @@ public class TileGrinder extends TileBCore implements IRSSwitchable, MenuProvide
     public final ManagedBool collectItems = register(new ManagedBool("collect_items", true, DataFlags.SAVE_NBT_SYNC_CONTAINER, DataFlags.CLIENT_CONTROL));
     public final ManagedBool collectXP = register(new ManagedBool("collect_xp", true, DataFlags.SAVE_NBT_SYNC_CONTAINER, DataFlags.CLIENT_CONTROL));
     public final ManagedInt storedXP = register(new ManagedInt("stored_xp", DataFlags.SAVE_BOTH_SYNC_CONTAINER));
-    public TileItemStackHandler itemHandler = new TileItemStackHandler(this, 2);
+    public ManagedItemHandler itemHandler = new ManagedItemHandler(this, 2);
     public EntityFilter entityFilter;
+    private final EntityFilterState filterState;
     public OPStorage opStorage = new ModularOPStorage(this, 1000000, 128000, 0);
 
     //Client side rendering fields
@@ -160,9 +161,9 @@ public class TileGrinder extends TileBCore implements IRSSwitchable, MenuProvide
         entityFilter.setupClientPacketHandling(() -> createServerBoundPacket(0));
         setClientSidePacketHandler(0, input -> entityFilter.receivePacketFromServer(input));
         setServerSidePacketHandler(0, (input, player) -> entityFilter.receivePacketFromClient(input));
-        // port-26.1.2: EntityFilter needs to implement BCSerializable<CompoundTag> for setSavedDataObject - TODO
-        // setSavedDataObject("entity_filter", entityFilter);
-        // setItemSavedDataObject("entity_filter", entityFilter);
+        filterState = new EntityFilterState(this, entityFilter);
+        setSavedDataObject("entity_filter", filterState);
+        setItemSavedDataObject("entity_filter", filterState);
 
         aoe.setValidator(value -> (byte) MathHelper.clip(value, 1, getMaxAOE()));
         aoe.addValueListener(e -> killZone = null);
@@ -170,9 +171,15 @@ public class TileGrinder extends TileBCore implements IRSSwitchable, MenuProvide
         enableTileDebug();
     }
 
+    @Override
+    public void setLevel(net.minecraft.world.level.Level level) {
+        super.setLevel(level);
+        itemHandler.loadPending();
+        filterState.attach();
+    }
+
     public static void register(RegisterCapabilitiesEvent event) {
         com.brandon3055.brandonscore.capability.CapabilityOP.registerBlockEntity(event, DEContent.TILE_GRINDER.get());
-        capability(event, DEContent.TILE_GRINDER, Capabilities.Item.BLOCK);
     }
 
     private boolean canExtractItem(int slot, ItemStack stack) {
@@ -291,7 +298,7 @@ public class TileGrinder extends TileBCore implements IRSSwitchable, MenuProvide
         DamageSource source = level.damageSources().playerAttack(getFakePlayer());
 
         //Attack the mob and enter cooldown mode for 5 ticks if successful. Else cooldown for 3 ticks.
-        if (nextTarget.hurt(source, damage)) {
+        if (nextTarget.hurtServer((ServerLevel) level, source, damage)) {
             if (!weapon.isEmpty()) {
                 ItemStack justInCase = weapon.copy();
                 justInCase.setDamageValue(justInCase.getMaxDamage() - 1);
@@ -359,8 +366,8 @@ public class TileGrinder extends TileBCore implements IRSSwitchable, MenuProvide
         debug("Detected: " + xp.size() + " XP entities");
         for (ExperienceOrb orb : xp) {
             if (!orb.isAlive()) continue;
-            if (collectXP.get() && storedXP.get() + orb.value <= getXPStorageCapacity()) {
-                storedXP.add(orb.value);
+            if (collectXP.get() && storedXP.get() + orb.getValue() <= getXPStorageCapacity()) {
+                storedXP.add(orb.getValue());
                 orb.discard();
             } else if (orb.age < 5400) {
                 orb.age = 5700;
@@ -371,16 +378,28 @@ public class TileGrinder extends TileBCore implements IRSSwitchable, MenuProvide
             List<ItemEntity> items = level.getEntitiesOfClass(ItemEntity.class, killZone.inflate(1, 1, 1));
             debug("Detected: " + items.size() + " Item entities");
             for (Direction dir : Direction.values()) {
-                BlockEntity target = level.getBlockEntity(worldPosition.relative(dir));
-                if (target != null) {
-                    // port-26.1.2: Item capability now returns ResourceHandler<ItemResource>, not IItemHandler
-                    // Logic requires rewrite to use transfer API - skipping insertion for now
-                    /*
-                     ResourceHandler<ItemResource> handler = Capabilities.Item.BLOCK.getCapability(level, target.getBlockPos(), null, target, dir.getOpposite());
-                     if (handler != null) {
-                         // TODO: Rewrite item insertion using ResourceHandler API
-                     }
-                     */
+                var handler = level.getCapability(Capabilities.Item.BLOCK, worldPosition.relative(dir), dir.getOpposite());
+                if (handler == null) continue;
+                Iterator<ItemEntity> remaining = items.iterator();
+                while (remaining.hasNext()) {
+                    ItemEntity entity = remaining.next();
+                    if (!entity.isAlive()) {
+                        remaining.remove();
+                        continue;
+                    }
+                    ItemStack stack = entity.getItem();
+                    int inserted;
+                    try (Transaction transaction = Transaction.openRoot()) {
+                        inserted = handler.insert(ItemResource.of(stack), stack.getCount(), transaction);
+                        if (inserted == 0) continue;
+                        transaction.commit();
+                    }
+                    if (inserted == stack.getCount()) {
+                        entity.discard();
+                        remaining.remove();
+                    } else {
+                        entity.setItem(stack.copyWithCount(stack.getCount() - inserted));
+                    }
                 }
             }
         }

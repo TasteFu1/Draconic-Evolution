@@ -132,15 +132,7 @@ public class ModularChestpiece extends Item implements IModularArmor, IDEEquipme
 
     @Override
     public EquippedItemModel getExtendedModel(LivingEntity entity, ItemStack stack, @Nullable EquipmentSlot slot, HumanoidModel<?> parentModel, boolean slim) {
-        ItemStack chest = entity.getItemBySlot(EquipmentSlot.CHEST);
-        boolean onArmor = slot == null && !chest.isEmpty() && chest.has(net.minecraft.core.component.DataComponents.EQUIPPABLE); // port-26.1.2: ArmorItem удалён -> EQUIPPABLE-компонент
-        if (model == null || model_on_armor == null) {
-            model = new ModularChestpieceModel<>(techLevel, false);
-            model_on_armor = new ModularChestpieceModel<>(techLevel, true);
-        }
-        ModularChestpieceModel<?> activeModel = onArmor ? model_on_armor : model;
-        ClientHooks.copyModelProperties(parentModel, activeModel);
-        return activeModel;
+        return ClientRendering.getModel(this, entity, slot, parentModel);
     }
 
     @Override
@@ -169,5 +161,18 @@ public class ModularChestpiece extends Item implements IModularArmor, IDEEquipme
     @Override
     public int getBarColor(ItemStack stack) {
         return damageBarColour(stack);
+    }
+    private static final class ClientRendering {
+        static EquippedItemModel getModel(ModularChestpiece chestpiece, LivingEntity entity, @Nullable EquipmentSlot slot, HumanoidModel<?> parentModel) {
+            ItemStack chest = entity.getItemBySlot(EquipmentSlot.CHEST);
+            boolean onArmor = slot == null && !chest.isEmpty() && chest.has(net.minecraft.core.component.DataComponents.EQUIPPABLE); // port-26.1.2: ArmorItem удалён -> EQUIPPABLE-компонент
+            if (chestpiece.model == null || chestpiece.model_on_armor == null) {
+                chestpiece.model = new ModularChestpieceModel<>(chestpiece.techLevel, false);
+                chestpiece.model_on_armor = new ModularChestpieceModel<>(chestpiece.techLevel, true);
+            }
+            ModularChestpieceModel<?> activeModel = onArmor ? chestpiece.model_on_armor : chestpiece.model;
+            ClientHooks.copyModelProperties(parentModel, activeModel);
+            return activeModel;
+        }
     }
 }

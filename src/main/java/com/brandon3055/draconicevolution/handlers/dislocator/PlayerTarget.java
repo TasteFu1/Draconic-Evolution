@@ -80,14 +80,14 @@ public class PlayerTarget extends DislocatorTarget {
 
     @Override
     public CompoundTag save(CompoundTag nbt) {
-        TagUtils26.putUUID(TagUtils26, nbt, "player_id", playerID);
+        TagUtils26.putUUID(nbt, "player_id", playerID);
         return super.save(nbt);
     }
 
     @Override
     protected void loadInternal(CompoundTag nbt) {
         super.loadInternal(nbt);
-        playerID = TagUtils26.getUUID(TagUtils26, nbt, "player_id");
+        playerID = TagUtils26.getUUID(nbt, "player_id");
     }
 
     @Override

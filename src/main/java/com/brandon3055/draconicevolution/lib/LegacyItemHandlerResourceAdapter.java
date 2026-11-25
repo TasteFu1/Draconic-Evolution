@@ -102,7 +102,7 @@ public final class LegacyItemHandlerResourceAdapter implements ResourceHandler<I
     }
 
     @Override
-    public long insert(final int index, final ItemResource resource, final long maxAmount, final TransactionContext transaction)
+    public int insert(final int index, final ItemResource resource, final int maxAmount, final TransactionContext transaction)
     {
         if (resource.isEmpty() || maxAmount < 0)
         {
@@ -114,12 +114,12 @@ public final class LegacyItemHandlerResourceAdapter implements ResourceHandler<I
         }
 
         snapshots.updateSnapshots(transaction);
-        final ItemStack remainder = handler.insertItem(index, resource.toStack((int) Math.min(maxAmount, Integer.MAX_VALUE)), false);
-        return (int) maxAmount - remainder.getCount();
+        final ItemStack remainder = handler.insertItem(index, resource.toStack(maxAmount), false);
+        return maxAmount - remainder.getCount();
     }
 
     @Override
-    public long extract(final int index, final ItemResource resource, final long maxAmount, final TransactionContext transaction)
+    public int extract(final int index, final ItemResource resource, final int maxAmount, final TransactionContext transaction)
     {
         if (resource.isEmpty() || maxAmount < 0)
         {
@@ -131,7 +131,7 @@ public final class LegacyItemHandlerResourceAdapter implements ResourceHandler<I
         }
 
         snapshots.updateSnapshots(transaction);
-        return handler.extractItem(index, (int) Math.min(maxAmount, Integer.MAX_VALUE), false).getCount();
+        return handler.extractItem(index, maxAmount, false).getCount();
     }
 }
 

@@ -60,7 +60,7 @@ public class ChaosCrystal extends EntityBlockBCore implements CustomTabHandling 
             }
         }
 
-        return super.onDestroyedByPlayer(state, level, pos, player, willHarvest, fluid);
+        return super.onDestroyedByPlayer(state, level, pos, player, toolStack, willHarvest, fluid);
     }
 
     @Override
@@ -71,14 +71,10 @@ public class ChaosCrystal extends EntityBlockBCore implements CustomTabHandling 
     }
 
     @Override
-    public void wasExploded(Level worldIn, BlockPos pos, Explosion explosionIn) {}
-
-    @Override
     public boolean canEntityDestroy(BlockState state, BlockGetter world, BlockPos pos, Entity entity) {
         return false;
     }
 
-    // port-26.1.2: BE-логика перенесена в TileChaosCrystal.setRemoved (см.)
 
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {

@@ -239,7 +239,7 @@ public class SimpleModuleHost implements ModuleHost, INBTSerializable<CompoundTa
         var result = ModuleEntity.CODEC.listOf().encodeStart(ops, moduleEntities);
         CompoundTag nbt = new CompoundTag();
         result.ifSuccess(tag -> nbt.put("modules", tag));
-        nbt.putUUID("identity", getIdentity());
+        TagUtils26.putUUID(nbt, "identity", getIdentity());
         return nbt;
     }
 
@@ -253,8 +253,8 @@ public class SimpleModuleHost implements ModuleHost, INBTSerializable<CompoundTa
             ModuleEntity.CODEC.listOf().parse(ops, modules).ifSuccess(moduleEntities::addAll);
 
         }
-        if (TagUtils26.hasUUID(TagUtils26, nbt, "identity")) {
-            identity = TagUtils26.getUUID(TagUtils26, nbt, "identity");
+        if (TagUtils26.hasUUID(nbt, "identity")) {
+            identity = TagUtils26.getUUID(nbt, "identity");
         }
     }
 

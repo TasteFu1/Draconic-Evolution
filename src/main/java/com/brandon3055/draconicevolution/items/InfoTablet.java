@@ -28,9 +28,7 @@ import net.minecraft.world.item.ItemStack;
 
 import net.minecraft.world.level.Level;
 
-import net.neoforged.api.distmarker.Dist;
 
-import net.neoforged.api.distmarker.OnlyIn;
 
 
 
@@ -52,16 +50,15 @@ public class InfoTablet extends Item {
     }
 
 
-    @OnlyIn(Dist.CLIENT)
     public static void openPIGui() {
         if (PIHelper.isInstalled()) {
             PIHelper.openMod(null, DraconicEvolution.MODID);
         } else {
-            Player player = Minecraft.getInstance().player;
+            Player player = com.brandon3055.draconicevolution.client.DEClientAccess.player();
             MutableComponent message = Component.literal("Project Intelligence is required to view DE documentation. ").withStyle(ChatFormatting.RED);
             MutableComponent link = Component.literal("[Click here to view curse page]").withStyle(ChatFormatting.BLUE);
-            link.setStyle(link.getStyle().withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, "https://www.curseforge.com/minecraft/mc-mods/project-intelligence")));
-            link.setStyle(link.getStyle().withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("https://www.curseforge.com/minecraft/mc-mods/project-intelligence"))));
+            link.setStyle(link.getStyle().withClickEvent(new ClickEvent.OpenUrl(java.net.URI.create("https://www.curseforge.com/minecraft/mc-mods/project-intelligence"))));
+            link.setStyle(link.getStyle().withHoverEvent(new HoverEvent.ShowText( Component.literal("https://www.curseforge.com/minecraft/mc-mods/project-intelligence"))));
             message.append(link);
             player.sendSystemMessage(message);
         }

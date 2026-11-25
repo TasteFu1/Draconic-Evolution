@@ -23,9 +23,9 @@ public class CelestialModifierSound extends SimpleSoundInstance implements Ticka
 
     public void updateSound(Vec3D pos, float volume, float pitch) {
         timer = 0;
-        x = (float) pos.x();
+        x = (float) pos.x;
         y = (float) pos.y;
-        z = (float) pos.z();
+        z = (float) pos.z;
         this.volume = volume;
         this.pitch = pitch;
     }

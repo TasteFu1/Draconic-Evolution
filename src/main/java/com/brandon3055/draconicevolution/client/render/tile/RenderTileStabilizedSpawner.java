@@ -29,7 +29,8 @@ import net.minecraft.world.item.ItemStack;
  */
 public class RenderTileStabilizedSpawner implements BlockEntityRenderer<TileStabilizedSpawner, RenderTileStabilizedSpawner.State> {
 
-    private static final ItemStack[] CORE_RENDER_ITEMS = new ItemStack[]{new ItemStack(DEContent.CORE_DRACONIUM.get()), new ItemStack(DEContent.CORE_WYVERN.get()), new ItemStack(DEContent.CORE_AWAKENED.get()), new ItemStack(DEContent.CORE_CHAOTIC.get())};
+    private static final java.util.List<java.util.function.Supplier<? extends net.minecraft.world.item.Item>> CORE_ITEMS =
+            java.util.List.of(DEContent.CORE_DRACONIUM, DEContent.CORE_WYVERN, DEContent.CORE_AWAKENED, DEContent.CORE_CHAOTIC);
 
     private final ItemModelResolver itemModels;
     private final EntityRenderDispatcher entityRenderer;
@@ -56,10 +57,10 @@ public class RenderTileStabilizedSpawner implements BlockEntityRenderer<TileStab
         if (entity != null) {
             state.displayEntity = entityRenderer.extractEntity(entity, partialTicks);
             state.displayEntity.lightCoords = state.lightCoords;
-            state.spin = (float) Mth.lerp(partialTicks, logic.getoSpin(), logic.getSpin()) * 10F;
+            state.spin = (float) Mth.lerp(partialTicks, logic.getOSpin(), logic.getSpin()) * 10F;
             state.scale = 0.53125F / Math.max(1F, Math.max(entity.getBbWidth(), entity.getBbHeight()));
         }
-        itemModels.updateForTopItem(state.core, CORE_RENDER_ITEMS[tile.spawnerTier.get().ordinal()], ItemDisplayContext.FIXED,
+        itemModels.updateForTopItem(state.core, CORE_ITEMS.get(tile.spawnerTier.get().ordinal()).get().getDefaultInstance(), ItemDisplayContext.FIXED,
                 tile.getLevel(), null, tile.posSeed());
     }
 

@@ -20,7 +20,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.HumanoidArm;
-import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
@@ -71,7 +71,7 @@ public class RenderModularStaff extends ToolRenderBase {
         float flair = 0F;
         float partialTick = partialTicks;
         if (entity != null && entity.getMainHandItem() == stack) {
-            flair = MathHelper.interpolate(entity.oAttackAnim, entity.attackAnim, partialTick);
+            flair = entity.getAttackAnim(partialTick);
             flair = MathHelper.clip(flair * 5F, 0F, 1F);
         }
 
@@ -132,45 +132,30 @@ public class RenderModularStaff extends ToolRenderBase {
         return transform == ItemDisplayContext.THIRD_PERSON_RIGHT_HAND || transform == ItemDisplayContext.THIRD_PERSON_LEFT_HAND;
     }
 
-    public static void doMixinStuff(LivingEntity entity, PlayerModel model) {
-        ItemStack mainHand = entity.getMainHandItem();
-        ItemStack offHand = entity.getOffhandItem();
-        boolean rightHanded = entity.getMainArm() == HumanoidArm.RIGHT;
-        boolean hasMain = mainHand.getItem() instanceof ModularStaff;
-        boolean hasOff = offHand.getItem() instanceof ModularStaff;
-
-        if (/*hasOff || */hasMain) {
-//            if (hasOff) {
-//                setStaffPose(entity, model.bipedRightArm, model.bipedLeftArm, model.bipedBody, model.bipedHead, rightHanded, !hasMain);
-//            }
-            if (hasMain) {
-                setStaffPose(entity, model.rightArm, model.leftArm, model.body, model.head, !rightHanded, !hasOff);
-            }
-            model.leftPants.loadPose(model.leftLeg.storePose());
-            model.rightPants.loadPose(model.rightLeg.storePose());
-            model.leftSleeve.loadPose(model.leftArm.storePose());
-            model.rightSleeve.loadPose(model.rightArm.storePose());
-            model.jacket.loadPose(model.body.storePose());
-        }
+    public static void applyStaffPose(AvatarRenderState state, PlayerModel model) {
+        if (!(state.getMainHandItemStack().getItem() instanceof ModularStaff)) return;
+        boolean left = state.mainArm == HumanoidArm.LEFT;
+        ItemStack offHand = left ? state.rightHandItemStack : state.leftHandItemStack;
+        setStaffPose(state.attackTime, model.rightArm, model.leftArm, model.head, left, !(offHand.getItem() instanceof ModularStaff));
     }
 
-    public static void setStaffPose(LivingEntity entity, ModelPart rightArm, ModelPart leftArm, ModelPart body, ModelPart head, boolean lefthand, boolean bothHands) {
+    private static void setStaffPose(float attackTime, ModelPart rightArm, ModelPart leftArm, ModelPart head, boolean lefthand, boolean bothHands) {
         if (lefthand) {
             //Yaw
             leftArm.yRot = head.yRot + torad(15F);
             //Pitch
-            leftArm.xRot = head.xRot - torad(60F) - torad(20F * entity.attackAnim);
+            leftArm.xRot = head.xRot - torad(60F) - torad(20F * attackTime);
             if (bothHands) {
-                rightArm.xRot = head.xRot - torad(60F) - torad(20F * entity.attackAnim);
+                rightArm.xRot = head.xRot - torad(60F) - torad(20F * attackTime);
                 rightArm.yRot = head.yRot - torad(45F);
             }
         } else {
             //Yaw
             rightArm.yRot = head.yRot - torad(15F);
             //Pitch
-            rightArm.xRot = head.xRot - torad(60F) - torad(20F * entity.attackAnim);
+            rightArm.xRot = head.xRot - torad(60F) - torad(20F * attackTime);
             if (bothHands) {
-                leftArm.xRot = head.xRot - torad(60F) - torad(20F * entity.attackAnim);
+                leftArm.xRot = head.xRot - torad(60F) - torad(20F * attackTime);
                 leftArm.yRot = head.yRot + torad(45F);
             }
         }

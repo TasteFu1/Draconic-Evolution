@@ -1,5 +1,6 @@
 package com.brandon3055.draconicevolution.blocks.energynet.rendering;
 
+import com.brandon3055.draconicevolution.client.DEParticleEffects;
 import com.brandon3055.brandonscore.lib.Vec3D;
 import com.brandon3055.draconicevolution.api.energy.ICrystalLink;
 import com.brandon3055.draconicevolution.blocks.energynet.tileentity.TileCrystalWirelessIO;
@@ -37,7 +38,7 @@ public class ENetFXHandlerClientWireless extends ENetFXHandler<TileCrystalWirele
         if (tile.hasStaticFX()) {
             if (staticFX == null || !staticFX.isAlive()) {
                 staticFX = tile.createStaticFX();
-                DEParticles.addParticleDirect(tile.getLevel(), staticFX);
+                DEParticleEffects.addParticleDirect(tile.getLevel(), staticFX);
             }
             staticFX.updateFX(0.5F);
         }
@@ -88,7 +89,7 @@ public class ENetFXHandlerClientWireless extends ENetFXHandler<TileCrystalWirele
                 for (BlockPos receiver : tile.getReceivers()) {
                     CrystalFXLink link = new CrystalFXLink((ClientLevel)tile.getLevel(), tile, Vec3D.getCenter(receiver));
                     linkFX.add(link);
-                    DEParticles.addParticleDirect(tile.getLevel(), link);
+                    DEParticleEffects.addParticleDirect(tile.getLevel(), link);
                 }
             }
         } else if (linkFX != null) {
@@ -137,13 +138,13 @@ public class ENetFXHandlerClientWireless extends ENetFXHandler<TileCrystalWirele
             }
             CrystalFXBeam beam = new CrystalFXBeam(tile.getLevel(), tile, (ICrystalLink) target);
             beamFXList.add(beam);
-            DEParticles.addParticleDirect(tile.getLevel(), beam);
+            DEParticleEffects.addParticleDirect(tile.getLevel(), beam);
         }
 
         for (BlockPos pos : tile.getReceivers()) {
             CrystalFXWireless wirelessFX = new CrystalFXWireless((ClientLevel)tile.getLevel(), tile, pos);
             transferFXList.add(wirelessFX);
-            DEParticles.addParticleDirect(tile.getLevel(), wirelessFX);
+            DEParticleEffects.addParticleDirect(tile.getLevel(), wirelessFX);
         }
     }
 

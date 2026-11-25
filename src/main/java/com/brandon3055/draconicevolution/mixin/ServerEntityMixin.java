@@ -5,73 +5,44 @@ import com.brandon3055.draconicevolution.entity.projectile.DraconicArrowEntity;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundMoveEntityPacket;
+import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.server.level.ServerEntity;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
-import net.neoforged.neoforge.network.bundle.PacketAndPayloadAcceptor;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.function.Consumer;
 
-/**
- * Created by covers1624 on 18/7/21.
- */
 @Mixin(ServerEntity.class)
 public abstract class ServerEntityMixin {
+    @Shadow @Final private Entity entity;
 
-    @Final
-    @Shadow
-    private Entity entity;
-
-    @Redirect(
-            method = "sendChanges()V",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Ljava/util/function/Consumer;accept(Ljava/lang/Object;)V",
-                    ordinal = 2
-            )
-    )
-    public void onVelocity(Consumer<Object> consumer, Object t) {
-        if (!(entity instanceof DraconicArrowEntity)) {
-            consumer.accept(t);
-            return;
+    @ModifyArg(method = "sendChanges", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/server/level/ServerEntity$Synchronizer;sendToTrackingPlayers(Lnet/minecraft/network/protocol/Packet;)V"))
+    private Packet<?> syncDraconicArrow(Packet<?> packet) {
+        if (entity instanceof DraconicArrowEntity) {
+            if (packet instanceof ClientboundMoveEntityPacket.PosRot) {
+                return BCoreNetwork.sendEntityVelocity(entity, true);
+            }
+            if (packet instanceof ClientboundSetEntityMotionPacket) {
+                return BCoreNetwork.sendEntityVelocity(entity, false);
+            }
         }
-        consumer.accept(BCoreNetwork.sendEntityVelocity(entity, false));
+        return packet;
     }
 
-    @Redirect(
-            method = "Lnet/minecraft/server/level/ServerEntity;sendPairingData(Lnet/minecraft/server/level/ServerPlayer;Lnet/neoforged/neoforge/network/bundle/PacketAndPayloadAcceptor;)V",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/neoforged/neoforge/network/bundle/PacketAndPayloadAcceptor;accept(Lnet/minecraft/network/protocol/Packet;)Lnet/neoforged/neoforge/network/bundle/PacketAndPayloadAcceptor;",
-                    ordinal = 3
-            )
-    )
-    public PacketAndPayloadAcceptor<?> onPairingData(PacketAndPayloadAcceptor<ClientGamePacketListener> instance, Packet t) {
-        if (!(entity instanceof DraconicArrowEntity)) {
-            instance.accept(t);
-            return null;
+    @Inject(method = "sendPairingData", at = @At("TAIL"))
+    @SuppressWarnings("unchecked")
+    private void pairDraconicArrow(ServerPlayer player, Consumer<Packet<? super ClientGamePacketListener>> packets,
+                                   CallbackInfo callback) {
+        if (entity instanceof DraconicArrowEntity) {
+            packets.accept((Packet<? super ClientGamePacketListener>) BCoreNetwork.sendEntityVelocity(entity, false));
         }
-        instance.accept((Packet<? super ClientGamePacketListener>) BCoreNetwork.sendEntityVelocity(entity, false));
-        return null;
-    }
-
-    @Redirect(
-            method = "sendChanges()V",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Ljava/util/function/Consumer;accept(Ljava/lang/Object;)V",
-                    ordinal = 3
-            )
-    )
-    public void onMovePacket(Consumer<Object> consumer, Object t) {
-        if (!(t instanceof ClientboundMoveEntityPacket.PosRot) || !(entity instanceof DraconicArrowEntity)) {
-            consumer.accept(t);
-            return;
-        }
-        consumer.accept(BCoreNetwork.sendEntityVelocity(entity, true));
     }
 }

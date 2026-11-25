@@ -25,7 +25,7 @@ public class RenderTileCelestialManipulator implements BlockEntityRenderer<TileC
                                    net.minecraft.client.renderer.feature.ModelFeatureRenderer.CrumblingOverlay breakProgress) {
         BlockEntityRenderer.super.extractRenderState(tile, state, partialTicks, cameraPosition, breakProgress);
         var capture = new com.brandon3055.brandonscore.client.render.ExtractedModel.Capture();
-        tile.extractEffects(partialTicks, new PoseStack(), capture);
+        tile.clientEffects().extractEffects(partialTicks, new PoseStack(), capture);
         state.effects = capture.finish();
     }
     @Override

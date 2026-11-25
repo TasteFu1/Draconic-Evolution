@@ -103,7 +103,6 @@ public class ReactorComponent extends EntityBlockBCore {
         return InteractionResult.SUCCESS;
     }
 
-    // port-26.1.2: BE-логика перенесена в TileReactorComponent.setRemoved (см.)
 
     @Override
     public boolean hasAnalogOutputSignal(BlockState state) {
@@ -111,7 +110,7 @@ public class ReactorComponent extends EntityBlockBCore {
     }
 
     @Override
-    public int getAnalogOutputSignal(BlockState blockState, Level worldIn, BlockPos pos) {
+    public int getAnalogOutputSignal(BlockState blockState, Level worldIn, BlockPos pos, Direction direction) {
         BlockEntity tileEntity = worldIn.getBlockEntity(pos);
 
         if (tileEntity instanceof TileReactorComponent) {

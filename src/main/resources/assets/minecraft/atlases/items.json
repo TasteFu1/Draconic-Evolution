@@ -1,0 +1,13 @@
+{
+  "sources": [
+    {
+      "type": "minecraft:directory",
+      "source": "module",
+      "prefix": "module/"
+    },
+    {
+      "type": "minecraft:single",
+      "resource": "draconicevolution:models/crystal_base"
+    }
+  ]
+}

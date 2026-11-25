@@ -15,6 +15,8 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
+import com.brandon3055.draconicevolution.lib.CoreDataCodecs;
 import net.minecraft.world.item.crafting.*;
 
 import java.util.ArrayList;
@@ -26,13 +28,17 @@ import java.util.stream.Collectors;
  */
 public class FusionRecipe implements IFusionRecipe {
 
-    private final ItemStack result;
+    private final ItemStackTemplate result;
     private final Ingredient catalyst;
     private final long totalEnergy;
     private final TechLevel techLevel;
     private final List<FusionIngredient> ingredients;
 
     public FusionRecipe(ItemStack result, Ingredient catalyst, long totalEnergy, TechLevel techLevel, List<FusionIngredient> ingredients) {
+        this(ItemStackTemplate.fromNonEmptyStack(result), catalyst, totalEnergy, techLevel, ingredients);
+    }
+
+    private FusionRecipe(ItemStackTemplate result, Ingredient catalyst, long totalEnergy, TechLevel techLevel, List<FusionIngredient> ingredients) {
         this.result = result;
         this.catalyst = catalyst;
         this.totalEnergy = totalEnergy;
@@ -67,7 +73,7 @@ public class FusionRecipe implements IFusionRecipe {
 
     @Override
     public ItemStack assemble(IFusionInventory inv, HolderLookup.Provider provider) {
-        ItemStack stack = result.copy();
+        ItemStack stack = result.create();
         if (stack.getItem() instanceof IFusionDataTransfer) {
             ((IFusionDataTransfer) stack.getItem()).transferIngredientData(stack, inv, provider);
         }
@@ -76,7 +82,7 @@ public class FusionRecipe implements IFusionRecipe {
 
     @Override
     public ItemStack getResultItem(HolderLookup.Provider provider) {
-        return result.copy();
+        return result.create();
     }
 
     @Override
@@ -129,20 +135,12 @@ public class FusionRecipe implements IFusionRecipe {
 
     public static final class Serializer {
         private Serializer() {}
-        private static final Codec<TechLevel> TECH_LEVEL_CODEC = Codec.STRING.comapFlatMap(name -> {
-            for (TechLevel tier : TechLevel.values()) {
-                if (tier.name().toLowerCase(java.util.Locale.ROOT).equals(name)) {
-                    return com.mojang.serialization.DataResult.success(tier);
-                }
-            }
-            return com.mojang.serialization.DataResult.error(() -> "Unknown fusion tech level: " + name);
-        }, tier -> tier.name().toLowerCase(java.util.Locale.ROOT));
         public static RecipeSerializer<FusionRecipe> create() { return new RecipeSerializer<>(CODEC, STREAM_CODEC); }
         private static final MapCodec<FusionRecipe> CODEC = RecordCodecBuilder.mapCodec(builder -> builder.group(
-                        ItemStack.CODEC.fieldOf("result").forGetter(e -> e.result),
+                        ItemStackTemplate.CODEC.fieldOf("result").forGetter(e -> e.result),
                         Ingredient.CODEC.fieldOf("catalyst").forGetter(e -> e.catalyst),
                         Codec.LONG.fieldOf("totalEnergy").forGetter(e -> e.totalEnergy),
-                        TECH_LEVEL_CODEC.fieldOf("techLevel").forGetter(e -> e.techLevel),
+                        CoreDataCodecs.TECH_LEVEL.fieldOf("techLevel").forGetter(e -> e.techLevel),
                         Codec.list(FusionIngredient.CODEC).fieldOf("ingredients").forGetter(e -> e.ingredients)
                 ).apply(builder, FusionRecipe::new)
         );
@@ -160,7 +158,7 @@ public class FusionRecipe implements IFusionRecipe {
         }
 
         private static FusionRecipe fromNetwork(RegistryFriendlyByteBuf buffer) {
-            ItemStack result =  ItemStack.STREAM_CODEC.decode(buffer);
+            ItemStackTemplate result = ItemStackTemplate.STREAM_CODEC.decode(buffer);
             Ingredient catalyst = Ingredient.CONTENTS_STREAM_CODEC.decode(buffer);
 
             int count = buffer.readUnsignedByte();
@@ -176,7 +174,7 @@ public class FusionRecipe implements IFusionRecipe {
         }
 
         private static void toNetwork(RegistryFriendlyByteBuf buffer, FusionRecipe recipe) {
-            ItemStack.STREAM_CODEC.encode(buffer, recipe.result);
+            ItemStackTemplate.STREAM_CODEC.encode(buffer, recipe.result);
             Ingredient.CONTENTS_STREAM_CODEC.encode(buffer, recipe.catalyst);
 
             if (recipe.ingredients.size() > 255) throw new IllegalArgumentException("Fusion recipe has more than 255 ingredients");

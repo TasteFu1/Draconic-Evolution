@@ -73,7 +73,7 @@ public class ReactorCore extends EntityBlockBCore {
     }
 
     @Override
-    public void onBlockExploded(BlockState state, Level world, BlockPos pos, Explosion explosion) {
+    public void onBlockExploded(BlockState state, ServerLevel world, BlockPos pos, Explosion explosion) {
         if (world.getBlockEntity(pos) instanceof TileReactorCore tile && tile.reactorState.get().isShieldActive()) {
             return;
         }

@@ -89,7 +89,7 @@ public class EnergyPylon extends EntityBlockBCore {
     }
 
     @Override
-    public void neighborChanged(BlockState state, Level level, BlockPos pos, Block blockIn, BlockPos fromPos, Orientation orientation, boolean isMoving) {
+    public void neighborChanged(BlockState state, Level level, BlockPos pos, Block blockIn, Orientation orientation, boolean isMoving) {
         if (level.getBlockEntity(pos) instanceof TileEnergyPylon tile && !StructureBlock.buildingLock) {
             tile.validateStructure();
         }
@@ -101,7 +101,7 @@ public class EnergyPylon extends EntityBlockBCore {
     }
 
     @Override
-    public int getAnalogOutputSignal(BlockState blockState, Level world, BlockPos pos) {
+    public int getAnalogOutputSignal(BlockState blockState, Level world, BlockPos pos, Direction direction) {
         if (world.getBlockEntity(pos) instanceof TileEnergyPylon tile && tile.opAdapter.getMaxOPStored() > 0) {
             return (int) MathHelper.clip(((double) tile.opAdapter.getOPStored() / tile.opAdapter.getMaxOPStored() * 15D), 0, 15);
         }

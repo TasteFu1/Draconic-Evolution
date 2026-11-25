@@ -54,7 +54,7 @@ public class ArialBombardPhase extends ChargeUpPhase {
             List<Player> targetOptions = guardian.level().players()
                     .stream()
                     .filter(e -> e.distanceToSqr(focus) <= 200 * 200)
-                    .filter(e -> StartPhase.AGRO_TARGETS.test(guardian, e))
+                    .filter(e -> StartPhase.AGRO_TARGETS.test((net.minecraft.server.level.ServerLevel) guardian.level(), guardian, e))
                     .collect(Collectors.toList());
             if (targetOptions.isEmpty()) {
                 return;

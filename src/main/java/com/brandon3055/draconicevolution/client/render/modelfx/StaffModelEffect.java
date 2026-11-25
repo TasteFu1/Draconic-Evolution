@@ -20,7 +20,7 @@ public class StaffModelEffect extends ModelEffect {
 
     private static final com.mojang.blaze3d.pipeline.RenderPipeline PIPELINE = com.mojang.blaze3d.pipeline.RenderPipeline
             .builder(net.minecraft.client.renderer.RenderPipelines.MATRICES_PROJECTION_SNIPPET)
-            .withLocation(DraconicEvolution.MODID + ":pipeline/staff_orbs")
+            .withLocation(Identifier.fromNamespaceAndPath(DraconicEvolution.MODID, "pipeline/staff_orbs"))
             .withVertexShader("core/position_tex_color").withFragmentShader("core/position_tex_color")
             .withSampler("Sampler0").withVertexFormat(DefaultVertexFormat.POSITION_TEX_COLOR, VertexFormat.Mode.QUADS)
             .withCull(false).withColorTargetState(new com.mojang.blaze3d.pipeline.ColorTargetState(com.mojang.blaze3d.pipeline.BlendFunction.LIGHTNING))

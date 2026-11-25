@@ -30,7 +30,6 @@ import com.brandon3055.draconicevolution.blocks.energynet.rendering.ENetFXHandle
 
 import com.brandon3055.draconicevolution.client.render.effect.CrystalFXBase;
 
-import com.brandon3055.draconicevolution.client.render.effect.CrystalFXRing;
 
 import com.brandon3055.draconicevolution.handlers.DEEventHandler;
 
@@ -40,7 +39,6 @@ import java.util.*;
 
 import net.minecraft.ChatFormatting;
 
-import net.minecraft.client.multiplayer.ClientLevel;
 
 import net.minecraft.core.BlockPos;
 
@@ -72,9 +70,7 @@ import net.minecraft.world.level.block.state.BlockState;
 
 import net.minecraft.world.phys.BlockHitResult;
 
-import net.neoforged.api.distmarker.Dist;
 
-import net.neoforged.api.distmarker.OnlyIn;
 
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 
@@ -172,7 +168,7 @@ public class TileCrystalWirelessIO extends TileCrystalBase {
     }
 
     @Override
-    public InteractionResult useWithoutItem(BlockState state, Player player, BlockHitResult hit) {
+    public InteractionResult onBlockUse(BlockState state, Player player, InteractionHand hand, BlockHitResult hit) {
         if (player.isShiftKeyDown()) {
             inputMode.invert();
             return InteractionResult.SUCCESS;
@@ -342,10 +338,9 @@ public class TileCrystalWirelessIO extends TileCrystalBase {
         return EnergyCrystal.CrystalType.WIRELESS;
     }
 
-    @OnlyIn (Dist.CLIENT)
     @Override
     public CrystalFXBase createStaticFX() {
-        return new CrystalFXRing((ClientLevel)level, this);
+        return com.brandon3055.draconicevolution.client.DEParticleEffects.createCrystalEffect(this, false);
     }
 
     @Override
@@ -382,7 +377,6 @@ public class TileCrystalWirelessIO extends TileCrystalBase {
         return new ENetFXHandlerServerWireless(this);
     }
 
-    @OnlyIn(Dist.CLIENT)
     @Override
     public ENetFXHandler createClientFXHandler() {
         return new ENetFXHandlerClientWireless(this);

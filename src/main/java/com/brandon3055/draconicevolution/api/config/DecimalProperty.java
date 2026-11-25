@@ -41,7 +41,7 @@ public class DecimalProperty extends ConfigProperty {
             DecimalFormatter.CODEC.fieldOf("formatter").forGetter(e -> e.formatter)
     ).apply(builder, DecimalProperty::new));
 
-    public static final StreamCodec<RegistryFriendlyByteBuf, DecimalProperty> STREAM_CODEC = NeoForgeStreamCodecs.composite(
+    public static final StreamCodec<RegistryFriendlyByteBuf, DecimalProperty> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.STRING_UTF8, e -> e.name,
             ByteBufCodecs.BOOL, e -> e.showOnHud,
             ByteBufCodecs.optional(UUIDUtil.STREAM_CODEC), ConfigProperty::getOptionalUniqueName,

@@ -37,7 +37,7 @@ public class CommandRespawnGuardian {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
                 Commands.literal("respawn_draconic_guardian")
-                        .requires(cs -> cs.hasPermission(2))
+                        .requires(net.minecraft.commands.Commands.hasPermission(net.minecraft.commands.Commands.LEVEL_GAMEMASTERS))
                         .executes(context -> respawn(context, false))
 //                        .then(Commands.literal("spawn_here")
 //                                .executes(context -> respawn(context, true)))
@@ -48,7 +48,7 @@ public class CommandRespawnGuardian {
         if (spawnHere) {
             return spawnHere(ctx);
         }
-        Vec3 pos = ctx.getSource().position();
+        Vec3 pos = ctx.getSource().getPosition();
 //        ServerPlayerEntity player = ctx.getSource().getPlayerOrException();
         TileChaosCrystal tile = BlockPos.betweenClosedStream(BlockPos.containing(pos).offset(-60, -60, -60), BlockPos.containing(pos).offset(60, 60, 60))
                 .filter(e -> ctx.getSource().getLevel().getBlockEntity(e) instanceof TileChaosCrystal)

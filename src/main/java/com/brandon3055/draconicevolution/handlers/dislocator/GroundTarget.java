@@ -96,13 +96,13 @@ public class GroundTarget extends DislocatorTarget {
     protected void loadInternal(CompoundTag nbt) {
         super.loadInternal(nbt);
         entityPos = Vector3.fromNBT(nbt);
-        entityUUID = TagUtils26.getUUID(TagUtils26, nbt, "entity_uuid");
+        entityUUID = TagUtils26.getUUID(nbt, "entity_uuid");
     }
 
     @Override
     public CompoundTag save(CompoundTag nbt) {
         entityPos.writeToNBT(nbt);
-        TagUtils26.putUUID(TagUtils26, nbt, "entity_uuid", entityUUID);
+        TagUtils26.putUUID(nbt, "entity_uuid", entityUUID);
         return super.save(nbt);
     }
 

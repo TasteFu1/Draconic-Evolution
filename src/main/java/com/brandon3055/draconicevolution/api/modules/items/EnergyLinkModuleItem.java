@@ -72,8 +72,8 @@ public class EnergyLinkModuleItem extends ModuleItem<EnergyLinkData> {
     }
 
     @Override
-    public void inventoryTick(ItemStack stack, Level level, Entity entity, int p_41407_, boolean p_41408_) {
-        if (!(level instanceof ServerLevel serverLevel) || TimeKeeper.getServerTick() % 20 != 0) return;
+    public void inventoryTick(ItemStack stack, ServerLevel serverLevel, Entity entity, net.minecraft.world.entity.EquipmentSlot slot) {
+        if (TimeKeeper.getServerTick() % 20 != 0) return;
         checkResetLink(stack, serverLevel);
     }
 

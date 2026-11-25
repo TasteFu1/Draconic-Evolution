@@ -84,9 +84,7 @@ import net.minecraft.world.phys.BlockHitResult;
 
 import net.minecraft.world.phys.Vec3;
 
-import net.neoforged.api.distmarker.Dist;
 
-import net.neoforged.api.distmarker.OnlyIn;
 
 import net.neoforged.neoforge.capabilities.Capabilities;
 
@@ -117,6 +115,7 @@ public class TileEntityDetector extends TileBCore implements MenuProvider, IInte
 
     public OPStorage opStorage = new ModularOPStorage(this, 512000, 32000, 0);
     public EntityFilter entityFilter;
+    private final EntityFilterState filterState;
 
     public List<String> playerNames = new ArrayList<>(); //TODO Need this?
 
@@ -133,9 +132,15 @@ public class TileEntityDetector extends TileBCore implements MenuProvider, IInte
         entityFilter.setupClientPacketHandling(() -> createServerBoundPacket(9));
         setClientSidePacketHandler(9, input -> entityFilter.receivePacketFromServer(input));
         setServerSidePacketHandler(9, (input, player) -> entityFilter.receivePacketFromClient(input));
-        // port-26.1.2: EntityFilter needs to implement BCSerializable<CompoundTag> for setSavedDataObject - TODO
-        // setSavedDataObject("entity_filter", entityFilter);
-        // setItemSavedDataObject("entity_filter", entityFilter);
+        filterState = new EntityFilterState(this, entityFilter);
+        setSavedDataObject("entity_filter", filterState);
+        setItemSavedDataObject("entity_filter", filterState);
+    }
+
+    @Override
+    public void setLevel(net.minecraft.world.level.Level level) {
+        super.setLevel(level);
+        filterState.attach();
     }
 
     public static void register(RegisterCapabilitiesEvent event) {
@@ -180,7 +185,6 @@ public class TileEntityDetector extends TileBCore implements MenuProvider, IInte
         }
     }
 
-    @OnlyIn (Dist.CLIENT)
     private void updateAnimation() {
         //region Targeting
 

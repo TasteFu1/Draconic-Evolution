@@ -1,6 +1,13 @@
 {
-   "pack": {
-      "pack_format": 22,
-      "description": "Draconic Evolution resource pack"
-   }
+  "pack": {
+    "description": "Draconic Evolution resources and data",
+    "min_format": [
+      84,
+      0
+    ],
+    "max_format": [
+      101,
+      1
+    ]
+  }
 }

@@ -203,7 +203,7 @@ public class MobSoul extends Item {
         }
 
         if (!renderEntityMap.containsKey(name)) {
-            Level level = Minecraft.getInstance().level;
+            Level level = com.brandon3055.draconicevolution.client.DEClientAccess.level();
             Entity entity;
             try {
                 EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.getValue(name);

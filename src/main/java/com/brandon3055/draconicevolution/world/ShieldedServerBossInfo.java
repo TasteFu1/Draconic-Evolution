@@ -16,7 +16,7 @@ public class ShieldedServerBossInfo extends ServerBossEvent {
     private boolean immune = false;
 
     public ShieldedServerBossInfo(Component name, BossBarColor color, BossBarOverlay overlay) {
-        super(name, color, overlay);
+        super(java.util.UUID.randomUUID(), name, color, overlay);
     }
 
     public void setShieldPower(float shieldPower) {

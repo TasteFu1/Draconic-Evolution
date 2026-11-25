@@ -29,8 +29,11 @@ public final class ManagedItemHandler extends TileItemStackHandler implements BC
     @Override
     public CompoundTag serializeNBT() {
         if (pendingLoad != null) return pendingLoad.copy();
-        if (owner.getLevel() == null) throw new IllegalStateException("Managed inventory has no registry context for saving");
-        var output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, owner.getLevel().registryAccess());
+        // Brandon's Core snapshots new handlers before the block entity has a level.
+        // Decoded stacks keep their original NBT in pendingLoad until world attachment.
+        var registries = owner.getLevel() != null ? owner.getLevel().registryAccess()
+                : net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
+        var output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, registries);
         serialize(output);
         return output.buildResult();
     }

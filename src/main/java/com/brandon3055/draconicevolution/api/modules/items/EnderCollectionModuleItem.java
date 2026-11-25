@@ -140,24 +140,24 @@ public class EnderCollectionModuleItem extends ModuleItem<NoData> {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flagIn) {
-        super.appendHoverText(stack, context, tooltip, flagIn);
+    public void appendHoverText(ItemStack stack, TooltipContext context, net.minecraft.world.item.component.TooltipDisplay display, java.util.function.Consumer<Component> tooltip, TooltipFlag flagIn) {
+        super.appendHoverText(stack, context, display, tooltip, flagIn);
 
         CompoundTag tag = stack.getOrDefault(ItemData.ENDER_MODULE_FREQUENCY, CustomData.EMPTY).copyTag();
         if (ModHelper.ENDERSTORAGE && tag.contains("frequency")) {
             addEnderStorageInfo(tag, tooltip, context.registries());
         }
 
-        tooltip.add(Component.translatable("module." + MODID + ".ender_storage.about").withStyle(ChatFormatting.DARK_GRAY));
-        tooltip.add(Component.translatable("module." + MODID + ".ender_storage.about_compat").withStyle(ChatFormatting.DARK_GRAY));
-        tooltip.add(Component.translatable("module." + MODID + ".ender_storage.about_compat2").withStyle(ChatFormatting.DARK_GRAY));
+        tooltip.accept(Component.translatable("module." + MODID + ".ender_storage.about").withStyle(ChatFormatting.DARK_GRAY));
+        tooltip.accept(Component.translatable("module." + MODID + ".ender_storage.about_compat").withStyle(ChatFormatting.DARK_GRAY));
+        tooltip.accept(Component.translatable("module." + MODID + ".ender_storage.about_compat2").withStyle(ChatFormatting.DARK_GRAY));
     }
 
-    private void addEnderStorageInfo(CompoundTag tag, List<Component> tooltip, HolderLookup.Provider registries) {
-        EnderStorageIntegration.ownerName(tag, registries).ifPresent(name -> tooltip.add(
+    private void addEnderStorageInfo(CompoundTag tag, java.util.function.Consumer<Component> tooltip, HolderLookup.Provider registries) {
+        EnderStorageIntegration.ownerName(tag, registries).ifPresent(name -> tooltip.accept(
                 Component.translatable("module." + MODID + ".ender_storage.owner").withStyle(ChatFormatting.GRAY)
                         .append(": ").append(name.copy().withStyle(ChatFormatting.DARK_GREEN))));
-        tooltip.add(Component.translatable("module." + MODID + ".ender_storage.frequency").withStyle(ChatFormatting.GRAY)
+        tooltip.accept(Component.translatable("module." + MODID + ".ender_storage.frequency").withStyle(ChatFormatting.GRAY)
                 .append(": ").append(EnderStorageIntegration.tooltip(tag, registries).copy().withStyle(ChatFormatting.DARK_GREEN)));
     }
 }

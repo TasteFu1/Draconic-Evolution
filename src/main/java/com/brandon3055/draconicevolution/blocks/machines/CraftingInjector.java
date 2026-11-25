@@ -108,7 +108,6 @@ public class CraftingInjector extends EntityBlockBCore implements IHudBlock {
         super.destroy(p_176206_1_, p_176206_2_, p_176206_3_);
     }
 
-    // port-26.1.2: BE-логика перенесена в TileFusionCraftingInjector.setRemoved (см.)
 
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {

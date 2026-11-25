@@ -1,0 +1,22 @@
+// NeoForge modules have Gradle variants in addition to their Maven POMs.
+// Keep these descriptors intact when consuming the bootstrapper's verified mirror.
+gradle.beforeProject { project ->
+    def stage = new File(System.getenv('DE_BUILD_ROOT'))
+    project.repositories.exclusiveContent {
+        forRepository {
+            project.repositories.maven {
+                name = 'PinnedNeoForgeTools'
+                url = new File(stage, 'mirror').toURI()
+                metadataSources {
+                    gradleMetadata()
+                    mavenPom()
+                }
+            }
+        }
+        filter {
+            includeModule 'net.neoforged', 'neoforge'
+            includeModule 'net.neoforged', 'DevLaunch'
+            includeModule 'net.neoforged.fancymodloader', 'junit-fml'
+        }
+    }
+}

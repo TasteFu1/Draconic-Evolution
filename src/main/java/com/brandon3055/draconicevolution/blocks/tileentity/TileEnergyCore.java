@@ -518,14 +518,10 @@ public class TileEnergyCore extends TileBCore implements MenuProvider, IInteract
         return Shapes.block();
     }
 
-    // port-26.1.2: BlockBehaviour.onRemove удалён в 26 — логика перенесена сюда;
-    // срабатывает при удалении BE из-за смены блока (guard отличает выгрузку чанка).
     @Override
-    public void setRemoved() {
-        super.setRemoved();
-        if (level() instanceof ServerLevel sl && sl.getBlockState(worldPosition).getBlock() != getBlockState().getBlock()) {
-            onRemoved();
-        }
+    public void preRemoveSideEffects(BlockPos pos, BlockState state) {
+        super.preRemoveSideEffects(pos, state);
+        onRemoved();
     }
 }
 

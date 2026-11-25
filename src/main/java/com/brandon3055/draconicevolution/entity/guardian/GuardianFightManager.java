@@ -177,7 +177,7 @@ public class GuardianFightManager extends WorldEntity implements ITickableWorldE
 
         //This is just using the player list in boss info to check if there are any players in the area.
         if (!this.bossInfo.getPlayers().isEmpty()) {
-            world.getChunkSource().addRegionTicket(TicketType.DRAGON, new ChunkPos(arenaOrigin.getX() >> 4, arenaOrigin.getZ() >> 4), 12, Unit.INSTANCE); //Is this chunk loading?
+            world.getChunkSource().addTicketWithRadius(TicketType.DRAGON, new ChunkPos(arenaOrigin.getX() >> 4, arenaOrigin.getZ() >> 4), 12); //Is this chunk loading?
             boolean areaLoaded = this.isFightAreaLoaded();
 
             if (this.respawnState != null) {
@@ -196,7 +196,7 @@ public class GuardianFightManager extends WorldEntity implements ITickableWorldE
                 }
             }
         } else {
-            world.getChunkSource().removeRegionTicket(TicketType.DRAGON, new ChunkPos(arenaOrigin.getX() >> 4, arenaOrigin.getZ() >> 4), 12, Unit.INSTANCE);
+            world.getChunkSource().removeTicketWithRadius(TicketType.DRAGON, new ChunkPos(arenaOrigin.getX() >> 4, arenaOrigin.getZ() >> 4), 12);
         }
     }
 
@@ -295,7 +295,7 @@ public class GuardianFightManager extends WorldEntity implements ITickableWorldE
     private DraconicGuardianEntity createNewGuardian() {
         ServerLevel world = (ServerLevel) this.level;
         world.getChunkAt(guardianSpawnPos());
-        DraconicGuardianEntity guardian = DEContent.ENTITY_DRACONIC_GUARDIAN.get().create(world);
+        DraconicGuardianEntity guardian = DEContent.ENTITY_DRACONIC_GUARDIAN.get().create(world, net.minecraft.world.entity.EntitySpawnReason.EVENT);
         assert guardian != null;
         guardian.getPhaseManager().setPhase(PhaseType.START);
         guardian.snapTo(guardianSpawnPos().getX(), guardianSpawnPos().getY(), guardianSpawnPos().getZ(), this.level.getRandom().nextFloat() * 360.0F, 0.0F);
@@ -324,7 +324,7 @@ public class GuardianFightManager extends WorldEntity implements ITickableWorldE
     }
 
     private void cleanUpAndDispose() {
-        ((ServerLevel) level).getChunkSource().removeRegionTicket(TicketType.DRAGON, new ChunkPos(arenaOrigin.getX() >> 4, arenaOrigin.getZ() >> 4), 12, Unit.INSTANCE);
+        ((ServerLevel) level).getChunkSource().removeTicketWithRadius(TicketType.DRAGON, new ChunkPos(arenaOrigin.getX() >> 4, arenaOrigin.getZ() >> 4), 12);
         bossInfo.removeAllPlayers();
         removeEntity();
     }

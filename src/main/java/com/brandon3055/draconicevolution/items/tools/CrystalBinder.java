@@ -25,13 +25,9 @@ import net.minecraft.world.level.block.state.BlockState;
  */
 public class CrystalBinder extends Item implements ICrystalBinder {
     public CrystalBinder(Properties properties) {
-        super(properties);
+        super(properties.enchantable(1));
     }
 
-    @Override
-    public boolean isEnchantable(ItemStack stack) {
-        return true;
-    }
 
 
     @Override

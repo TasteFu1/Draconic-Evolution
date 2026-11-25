@@ -1,5 +1,6 @@
 package com.brandon3055.draconicevolution.init;
 
+import com.brandon3055.draconicevolution.lib.CoreDataCodecs;
 import com.brandon3055.brandonscore.api.TechLevel;
 import com.brandon3055.brandonscore.inventory.InventoryDynamic;
 import com.brandon3055.brandonscore.utils.TargetPos;
@@ -45,14 +46,14 @@ public class ItemData {
     }
 
     //@formatter:off
-    public static final DeferredHolder<DataComponentType<?>, DataComponentType<TechLevel>>                  TECH_LEVEL                  = DATA.register("tech_level",                   () -> DataComponentType.<TechLevel>builder().persistent(TechLevel.CODEC).networkSynchronized(TechLevel.STREAM_CODEC).build());
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<TechLevel>>                  TECH_LEVEL                  = DATA.register("tech_level",                   () -> DataComponentType.<TechLevel>builder().persistent(CoreDataCodecs.TECH_LEVEL).networkSynchronized(CoreDataCodecs.TECH_LEVEL_STREAM).build());
 
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<UUID>>                       DISLOCATOR_PLAYER_ID        = DATA.register("dislocator_player_id",         () -> DataComponentType.<UUID>builder().persistent(UUIDUtil.CODEC).networkSynchronized(UUIDUtil.STREAM_CODEC).build());
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<UUID>>                       DISLOCATOR_STACK_ID         = DATA.register("dislocator_stack_id",          () -> DataComponentType.<UUID>builder().persistent(UUIDUtil.CODEC).networkSynchronized(UUIDUtil.STREAM_CODEC).build());
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<UUID>>                       DISLOCATOR_LINK_ID          = DATA.register("dislocator_link_id",           () -> DataComponentType.<UUID>builder().persistent(UUIDUtil.CODEC).networkSynchronized(UUIDUtil.STREAM_CODEC).build());
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<String>>                     DISLOCATOR_PLAYER_NAME      = DATA.register("dislocator_player_name",       () -> DataComponentType.<String>builder().persistent(Codec.STRING).networkSynchronized(ByteBufCodecs.STRING_UTF8).build());
 
-    public static final DeferredHolder<DataComponentType<?>, DataComponentType<TargetPos>>                  DISLOCATOR_TARGET           = DATA.register("dislocator_target",            () -> DataComponentType.<TargetPos>builder().persistent(TargetPos.CODEC).networkSynchronized(TargetPos.STREAM_CODEC).build());
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<TargetPos>>                  DISLOCATOR_TARGET           = DATA.register("dislocator_target",            () -> DataComponentType.<TargetPos>builder().persistent(CoreDataCodecs.TARGET_POS).networkSynchronized(CoreDataCodecs.TARGET_POS_STREAM).build());
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>>                    DISLOCATOR_FUEL             = DATA.register("dislocator_fuel",              () -> DataComponentType.<Integer>builder().persistent(Codec.INT).networkSynchronized(ByteBufCodecs.INT).build());
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>>                    DISLOCATOR_SELECTED         = DATA.register("dislocator_selected",          () -> DataComponentType.<Integer>builder().persistent(Codec.INT).networkSynchronized(ByteBufCodecs.INT).build());
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<Boolean>>                    DISLOCATOR_BLINK            = DATA.register("dislocator_blink",             () -> DataComponentType.<Boolean>builder().persistent(Codec.BOOL).networkSynchronized(ByteBufCodecs.BOOL).build());
@@ -65,8 +66,8 @@ public class ItemData {
 
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<GlobalPos>>                  BINDER_POS                  = DATA.register("binder_pos",                   () -> DataComponentType.<GlobalPos>builder().persistent(GlobalPos.CODEC).networkSynchronized(GlobalPos.STREAM_CODEC).build());
 
-    public static final DeferredHolder<DataComponentType<?>, DataComponentType<DumData<ModuleHost>>>        HOST_CAP_HOLDER             = DATA.register("module_host_cap_instance",     () -> DataComponentType.<DumData<ModuleHost>>builder().persistent(Codec.unit(DumData::new)).build());
-    public static final DeferredHolder<DataComponentType<?>, DataComponentType<DumData<ModularOPStorage>>>  ENERGY_CAP_HOLDER           = DATA.register("energy_cap_instance",          () -> DataComponentType.<DumData<ModularOPStorage>>builder().persistent(Codec.unit(DumData::new)).build());
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<DumData<ModuleHost>>>        HOST_CAP_HOLDER             = DATA.register("module_host_cap_instance",     () -> DataComponentType.<DumData<ModuleHost>>builder().persistent(com.mojang.serialization.MapCodec.<DumData<ModuleHost>>unit(DumData::new).codec()).build());
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<DumData<ModularOPStorage>>>  ENERGY_CAP_HOLDER           = DATA.register("energy_cap_instance",          () -> DataComponentType.<DumData<ModularOPStorage>>builder().persistent(com.mojang.serialization.MapCodec.<DumData<ModularOPStorage>>unit(DumData::new).codec()).build());
 
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<DestroySpeedData>>           DESTROY_SPEED_DATA          = DATA.register("destroy_speed_data",           () -> DataComponentType.<DestroySpeedData>builder().persistent(DestroySpeedData.CODEC).build());
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<AttributeData>>              ATTRIBUTE_DATA              = DATA.register("attribute_data",               () -> DataComponentType.<AttributeData>builder().persistent(AttributeData.CODEC).build());
@@ -105,7 +106,7 @@ public class ItemData {
 
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<Double>>                     AUTO_FEED_MODULE_FOOD       = DATA.register("auto_feed_module_food",        () -> DataComponentType.<Double>builder().persistent(Codec.DOUBLE).networkSynchronized(ByteBufCodecs.DOUBLE).build());
 
-    public static final DeferredHolder<DataComponentType<?>, DataComponentType<InventoryDynamic>>           TREE_MODULE_INVENTORY       = DATA.register("tree_module_inventory",        () -> DataComponentType.<InventoryDynamic>builder().persistent(InventoryDynamic.CODEC).networkSynchronized(InventoryDynamic.STREAM_CODEC).build());
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<InventoryDynamic>>           TREE_MODULE_INVENTORY       = DATA.register("tree_module_inventory",        () -> DataComponentType.<InventoryDynamic>builder().persistent(CoreDataCodecs.INVENTORY).networkSynchronized(CoreDataCodecs.INVENTORY_STREAM).build());
 
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<List<Filter>>>               FILTER_MODULE_FILTERS       = DATA.register("filter_module_filters",        () -> DataComponentType.<List<Filter>>builder().persistent(FilteredModuleEntity.FILTERS_CODEC).networkSynchronized(FilteredModuleEntity.FILTERS_STREAM_CODEC).build());
 

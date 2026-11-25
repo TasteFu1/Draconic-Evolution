@@ -1,5 +1,6 @@
 package com.brandon3055.draconicevolution.client.render.hud;
 
+import com.brandon3055.brandonscore.utils.EnergyUtils;
 import com.brandon3055.brandonscore.client.gui.modular.elements.GuiContextMenu;
 import com.brandon3055.brandonscore.client.gui.modular.lib.GuiRender;
 import com.brandon3055.brandonscore.client.gui.modular.sprite.Material;
@@ -39,7 +40,6 @@ public class ShieldHudElement extends AbstractHudElement {
     private static int TOTEM_EFFECT_TIME = 32;
 
     private static Random rand = new Random();
-    private Minecraft mc = Minecraft.getInstance();
     private double shieldCharge = 0;
     private Component shieldText = Component.empty();
     private double coolDown = 0;
@@ -80,8 +80,8 @@ public class ShieldHudElement extends AbstractHudElement {
 
     public void popTotem() {
         totemEffect = TOTEM_EFFECT_TIME;
-        if (mc.level != null) {
-            totemEffectSeed = mc.level.getRandom().nextLong();
+        if (Minecraft.getInstance().level != null) {
+            totemEffectSeed = Minecraft.getInstance().level.getRandom().nextLong();
         }
         totemEffectIndex = 0;
         for (double totem : totemStatus) {
@@ -106,6 +106,7 @@ public class ShieldHudElement extends AbstractHudElement {
 
     @Override
     public void tick(boolean configuring) {
+        Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || !enabled) {
             renderHud = false;
             if (configuring) setupExample();
@@ -119,7 +120,7 @@ public class ShieldHudElement extends AbstractHudElement {
         //Get and validate the armor chestpiece
         ItemStack chestStack = IModularArmor.getArmor(mc.player);
         try (ModuleHost host = DECapabilities.getHost(chestStack)) {
-            IOPStorage opStorage = chestStack.getCapability(CapabilityOP.ITEM, net.neoforged.neoforge.transfer.access.ItemAccess.forStack(chestStack)); // port-26.1.2
+            IOPStorage opStorage = EnergyUtils.getStorage(chestStack);
             if (chestStack.isEmpty() || host == null || opStorage == null) {
                 renderHud = false; //The storage check is just a safety check. If the item has a ModuleHost it should always have storage unless something is broken (even without storage modules the capacity is just zero)
                 if (configuring) setupExample();
@@ -161,7 +162,7 @@ public class ShieldHudElement extends AbstractHudElement {
                 long capEnergy = 0;
 
                 for (ItemStack stack : capacitors) {
-                    IOPStorage storage = stack.getCapability(CapabilityOP.ITEM, net.neoforged.neoforge.transfer.access.ItemAccess.forStack(stack)); // port-26.1.2
+                    IOPStorage storage = EnergyUtils.getStorage(stack);
                     if (storage != null) {
                         capMax = Utils.safeAdd(storage.getMaxOPStored(), capMax);
                         capEnergy = Utils.safeAdd(storage.getOPStored(), capEnergy);
@@ -287,11 +288,11 @@ public class ShieldHudElement extends AbstractHudElement {
         render.flush(); //TODO, is this needed?
 
         //Draw Text (after end batch otherwise font rendering will break)
-        double tPos = width / 2D - mc.font.width(shieldText) / 2D;
-//        mc.font.drawInBatch(shieldText, (float) tPos, xl ? 4 : 2, scaleAlpha(0xFF0000FF));
+        double tPos = width / 2D - Minecraft.getInstance().font.width(shieldText) / 2D;
+//        Minecraft.getInstance().font.drawInBatch(shieldText, (float) tPos, xl ? 4 : 2, scaleAlpha(0xFF0000FF));
         render.drawString(shieldText, (float) tPos, xl ? 4 : 2, scaleAlpha(0xFF0000FF), false);
         if (numericEnergy && !energyText.getString().isEmpty()) {
-//            mc.font.drawShadow(mStack, energyText, 2, (float) height + 1F, scaleAlpha(0xFFFFFFFF));
+//            Minecraft.getInstance().font.drawShadow(mStack, energyText, 2, (float) height + 1F, scaleAlpha(0xFFFFFFFF));
             render.drawString(energyText, 2, (float) height + 1F, scaleAlpha(0xFFFFFFFF), true);
         }
         render.pose().popPose();

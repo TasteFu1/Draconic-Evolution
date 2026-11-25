@@ -106,15 +106,12 @@ public class TilePotentiometer extends TileBCore implements IRedstoneEmitter, II
         return InteractionResult.SUCCESS;
     }
 
-    // port-26.1.2: BlockBehaviour.onRemove удалён в 26 — логика перенесена сюда (guard = смена блока, не выгрузка чанка)
     @Override
-    public void setRemoved() {
-        super.setRemoved();
-        if (level() instanceof ServerLevel sl && sl.getBlockState(worldPosition).getBlock() != getBlockState().getBlock()) {
-            if (power.get() > 0) {
-                ((com.brandon3055.draconicevolution.blocks.Potentiometer) getBlockState().getBlock())
-                        .updateNeighborsAfterRemoval(getBlockState(), level(), worldPosition);
-            }
+    public void preRemoveSideEffects(BlockPos pos, BlockState state) {
+        super.preRemoveSideEffects(pos, state);
+        if (power.get() > 0) {
+            ((com.brandon3055.draconicevolution.blocks.Potentiometer) getBlockState().getBlock())
+                    .updateNeighborsAfterRemoval(state, level, pos);
         }
     }
 }

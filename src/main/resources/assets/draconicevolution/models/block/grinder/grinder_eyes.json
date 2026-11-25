@@ -2,6 +2,7 @@
 	"parent": "block/block",
 	"credit": "Made by brandon3055 with Blockbench",
 	"textures": {
+        "particle": "#skull_eyes",
 		"skull_eyes": "draconicevolution:block/grinder"
 	},
 	"elements": [

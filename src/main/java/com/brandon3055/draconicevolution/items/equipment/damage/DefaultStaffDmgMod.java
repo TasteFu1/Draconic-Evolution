@@ -42,9 +42,7 @@ import net.minecraft.world.phys.HitResult;
 
 import net.minecraft.world.phys.Vec3;
 
-import net.neoforged.api.distmarker.Dist;
 
-import net.neoforged.api.distmarker.OnlyIn;
 
 
 
@@ -92,12 +90,16 @@ public class DefaultStaffDmgMod implements IDamageModifier {
         DraconicNetwork.sendStaffEffect(source, 0, e -> e.writeVector(new Vector3(finalPos)));
     }
 
-    @OnlyIn(Dist.CLIENT)
     public static void handleEffect(LivingEntity source, MCDataInput data) {
-        Vector3 pos = data.readVector();
-        ClientLevel world = (ClientLevel) source.level();
-        Minecraft mc = Minecraft.getInstance();
-        mc.getSoundManager().play(new SimpleSoundInstance(DESounds.STAFF_HIT_DEFAULT.get(), SoundSource.PLAYERS, 10, 1, world.getRandom(), pos.pos()));
-        mc.particleEngine.add(new StaffBeamEffect(world, source, pos));
+        ClientEffect.play(source, data);
+    }
+    private static final class ClientEffect {
+        static void play(LivingEntity source, MCDataInput data) {
+            Vector3 pos = data.readVector();
+            ClientLevel world = (ClientLevel) source.level();
+            Minecraft mc = Minecraft.getInstance();
+            mc.getSoundManager().play(new SimpleSoundInstance(DESounds.STAFF_HIT_DEFAULT.get(), SoundSource.PLAYERS, 10, 1, world.getRandom(), pos.pos()));
+            mc.particleEngine.add(new StaffBeamEffect(world, source, pos));
+        }
     }
 }

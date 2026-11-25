@@ -3,8 +3,6 @@ package com.brandon3055.draconicevolution.client.keybinding;
 import com.brandon3055.draconicevolution.DraconicEvolution;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.settings.IKeyConflictContext;
@@ -17,7 +15,6 @@ import java.util.function.Supplier;
 /**
  * Created by Brandon on 14/08/2014.
  */
-@OnlyIn(Dist.CLIENT)
 public class KeyBindings {
 
     public static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(net.minecraft.resources.Identifier.fromNamespaceAndPath(DraconicEvolution.MODID, "main")); // port-26.1.2: строка-категория -> Category record

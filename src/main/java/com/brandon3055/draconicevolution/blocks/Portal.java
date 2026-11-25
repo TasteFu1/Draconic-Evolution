@@ -25,6 +25,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.InsideBlockEffectApplier;
 
 import net.minecraft.world.level.BlockGetter;
 
@@ -134,7 +135,7 @@ public class Portal extends EntityBlockBCore implements CustomTabHandling {
     }
 
     @Override
-    public void neighborChanged(BlockState state, Level world, BlockPos pos, Block blockIn, BlockPos fromPos, Orientation orientation, boolean isMoving) {
+    public void neighborChanged(BlockState state, Level world, BlockPos pos, Block blockIn, Orientation orientation, boolean isMoving) {
         if (world.isClientSide()) return;
 
         if (!canSurvive(state, world, pos)) {
@@ -149,7 +150,7 @@ public class Portal extends EntityBlockBCore implements CustomTabHandling {
     }
 
     @Override
-    public void entityInside(BlockState state, Level world, BlockPos pos, Entity entity) {
+    public void entityInside(BlockState state, Level world, BlockPos pos, Entity entity, InsideBlockEffectApplier effects, boolean isPrecise) {
         BlockEntity tile = world.getBlockEntity(pos);
         if (tile instanceof TilePortal && ((TilePortal) tile).getController() != null) {
             ((TilePortal) tile).getController().handleEntityTeleport(entity);

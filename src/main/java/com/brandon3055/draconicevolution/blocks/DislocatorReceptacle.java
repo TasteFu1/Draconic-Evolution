@@ -30,7 +30,6 @@ public class DislocatorReceptacle extends EntityBlockBCore {
         builder.add(ACTIVE, CAMO);
     }
 
-    // port-26.1.2: BE-логика перенесена в TileDislocatorReceptacle.setRemoved (guard = смена блока)
 
     @Override
     public void onPlace(BlockState state, Level worldIn, BlockPos pos, BlockState oldState, boolean isMoving) {

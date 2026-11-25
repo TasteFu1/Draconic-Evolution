@@ -1,5 +1,6 @@
 package com.brandon3055.draconicevolution.api.modules.entities;
 
+import com.brandon3055.draconicevolution.lib.CoreDataCodecs;
 import com.brandon3055.brandonscore.api.power.IOPStorage;
 
 import com.brandon3055.brandonscore.capability.CapabilityOP;
@@ -59,6 +60,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 
 import net.minecraft.client.model.player.PlayerModel;
+import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 
 import net.minecraft.network.RegistryFriendlyByteBuf;
 
@@ -82,9 +84,7 @@ import net.minecraft.world.item.ItemStack;
 
 import net.minecraft.world.item.TooltipFlag;
 
-import net.neoforged.api.distmarker.Dist;
 
-import net.neoforged.api.distmarker.OnlyIn;
 
 import net.neoforged.bus.api.ICancellableEvent;
 
@@ -97,7 +97,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import static com.brandon3055.draconicevolution.DraconicEvolution.MODID;
 
 
-import com.brandon3055.draconicevolution.lib.DEStreamCodecs; // port-26.1.2: BCStreamCodec удалён из BC-26
+import com.brandon3055.draconicevolution.lib.DEStreamCodecs; // port-26.1.2: BCStreamCodec СѓРґР°Р»С‘РЅ РёР· BC-26
 
 
 
@@ -113,7 +113,7 @@ public class TreeHarvestEntity extends ModuleEntity<TreeHarvestData> implements 
             DEModules.codec().fieldOf("module").forGetter(ModuleEntity::getModule),
             Codec.INT.fieldOf("gridx").forGetter(ModuleEntity::getGridX),
             Codec.INT.fieldOf("gridy").forGetter(ModuleEntity::getGridY),
-            InventoryDynamic.CODEC.fieldOf("item_buffer").forGetter(e -> e.itemBuffer),
+            CoreDataCodecs.INVENTORY.fieldOf("item_buffer").forGetter(e -> e.itemBuffer),
             BooleanProperty.CODEC.fieldOf("harvest_leaves").forGetter(e -> e.harvestLeaves),
             IntegerProperty.CODEC.fieldOf("harvest_range").forGetter(e -> e.harvestRange)
     ).apply(builder, TreeHarvestEntity::new));
@@ -122,7 +122,7 @@ public class TreeHarvestEntity extends ModuleEntity<TreeHarvestData> implements 
             DEModules.streamCodec(), ModuleEntity::getModule,
             ByteBufCodecs.INT, ModuleEntity::getGridX,
             ByteBufCodecs.INT, ModuleEntity::getGridY,
-            InventoryDynamic.STREAM_CODEC, e -> e.itemBuffer,
+            CoreDataCodecs.INVENTORY_STREAM, e -> e.itemBuffer,
             BooleanProperty.STREAM_CODEC, e -> e.harvestLeaves,
             IntegerProperty.STREAM_CODEC, e -> e.harvestRange,
             TreeHarvestEntity::new
@@ -141,7 +141,7 @@ public class TreeHarvestEntity extends ModuleEntity<TreeHarvestData> implements 
 
     @Override
     public ModuleEntity<?> copy() {
-        return new TreeHarvestEntity(module, getGridX(), getGridY(), itemBuffer.copy(), harvestLeaves.copy(), harvestRange.copy());
+        return new TreeHarvestEntity(module, getGridX(), getGridY(), CoreDataCodecs.copy(itemBuffer), harvestLeaves.copy(), harvestRange.copy());
     }
 
     @Override
@@ -235,7 +235,6 @@ public class TreeHarvestEntity extends ModuleEntity<TreeHarvestData> implements 
     }
 
     @Override
-    @OnlyIn (Dist.CLIENT)
     public void addHostHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         if (Minecraft.getInstance().hasShiftDown()) {
             tooltip.add(Component.translatable("module." + MODID + ".tree_harvest.single").withStyle(ChatFormatting.DARK_GRAY));
@@ -246,10 +245,9 @@ public class TreeHarvestEntity extends ModuleEntity<TreeHarvestData> implements 
     }
 
     @Override
-    @OnlyIn (Dist.CLIENT)
     public void modifyFirstPersonUsingPose(RenderHandEvent event, boolean leftHand) {
         PoseStack poseStack = event.getPoseStack();
-        Player player = Minecraft.getInstance().player;
+        Player player = com.brandon3055.draconicevolution.client.DEClientAccess.player();
         int handOffset = !leftHand ? 1 : -1;
 
         poseStack.translate((float) handOffset * -0.2785682F, 0.18344387F, 0.15731531F);
@@ -276,8 +274,7 @@ public class TreeHarvestEntity extends ModuleEntity<TreeHarvestData> implements 
     }
 
     @Override
-    @OnlyIn (Dist.CLIENT)
-    public void modifyPlayerModelPose(Player player, PlayerModel<?> model, boolean leftHand) {
+    public void modifyPlayerModelPose(AvatarRenderState state, PlayerModel model, boolean leftHand) {
         if (!leftHand) {
             model.rightArm.yRot = -0.1F + model.head.yRot;
             model.leftArm.yRot = 0.1F + model.head.yRot + 0.4F;
@@ -290,23 +287,18 @@ public class TreeHarvestEntity extends ModuleEntity<TreeHarvestData> implements 
             model.leftArm.xRot = (-(float) Math.PI / 2F) + model.head.xRot;
         }
 
-        model.leftPants.copyFrom(model.leftLeg);
-        model.rightPants.copyFrom(model.rightLeg);
-        model.leftSleeve.copyFrom(model.leftArm);
-        model.rightSleeve.copyFrom(model.rightArm);
-        model.jacket.copyFrom(model.body);
     }
 
     @Override
     public void saveEntityToStack(ItemStack stack, ModuleContext context) {
-        stack.set(ItemData.TREE_MODULE_INVENTORY, itemBuffer.copy());
+        stack.set(ItemData.TREE_MODULE_INVENTORY, CoreDataCodecs.copy(itemBuffer));
         stack.set(ItemData.BOOL_ITEM_PROP_1, harvestLeaves.copy());
         stack.set(ItemData.INT_ITEM_PROP_1, harvestRange.copy());
     }
 
     @Override
     public void loadEntityFromStack(ItemStack stack, ModuleContext context) {
-        itemBuffer = stack.getOrDefault(ItemData.TREE_MODULE_INVENTORY, itemBuffer).copy();
+        itemBuffer = CoreDataCodecs.copy(stack.getOrDefault(ItemData.TREE_MODULE_INVENTORY, itemBuffer));
         harvestLeaves = stack.getOrDefault(ItemData.BOOL_ITEM_PROP_1, harvestLeaves).copy();
         harvestRange = stack.getOrDefault(ItemData.INT_ITEM_PROP_1, harvestRange).copy();
     }

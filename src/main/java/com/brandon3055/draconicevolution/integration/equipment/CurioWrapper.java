@@ -32,7 +32,7 @@ public class CurioWrapper implements ICurio {
     }
 
     @Override
-    public List<Component> getSlotsTooltip(List<Component> tooltips) {
+    public List<Component> getSlotsTooltip(List<Component> tooltips, net.minecraft.world.item.Item.TooltipContext context) {
         return item.getTagsTooltip(stack, tooltips);
     }
 

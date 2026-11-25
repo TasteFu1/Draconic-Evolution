@@ -89,7 +89,7 @@ public class ProcessChaosImplosion implements IProcess {
             this.yCoord = y;
             this.zCoord = z;
             this.power = power;
-            this.getRandom() = random;
+            this.random = random;
         }
 
         @Override

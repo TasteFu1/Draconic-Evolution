@@ -54,14 +54,16 @@ public class ModuleItem<P extends ModuleData<P>> extends Item implements ModuleP
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flagIn) {
-        super.appendHoverText(stack, context, tooltip, flagIn);
+    public void appendHoverText(ItemStack stack, TooltipContext context, net.minecraft.world.item.component.TooltipDisplay display, java.util.function.Consumer<Component> output, TooltipFlag flagIn) {
+        super.appendHoverText(stack, context, display, output, flagIn);
+        List<Component> tooltip = new java.util.ArrayList<>();
         getModule().addInformation(tooltip, new LimitedModuleContext(stack, null, context.level(), null));
         ModuleEntity<?> entity = getModule().createEntity();
         if (context.level() != null) {
             entity.loadEntityFromStack(stack, new StackModuleContext(stack, null, null));
             entity.addToolTip(tooltip);
         }
+        tooltip.forEach(output);
     }
 
 //    @Override

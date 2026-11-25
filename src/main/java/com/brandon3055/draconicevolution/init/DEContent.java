@@ -75,8 +75,8 @@ import static com.brandon3055.draconicevolution.DraconicEvolution.MODID;
  */
 public class DEContent {
     /** Every item needs its own mutable properties and registry key before construction in MC26. */
-    private static TechProperties equipmentProperties(TechProperties template, net.minecraft.resources.Identifier id) {
-        TechProperties properties = template.copy();
+    private static TechProperties equipmentProperties(java.util.function.Supplier<TechProperties> template, net.minecraft.resources.Identifier id) {
+        TechProperties properties = template.get();
         properties.setId(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.ITEM, id));
         return properties;
     }
@@ -226,7 +226,7 @@ public class DEContent {
     //Misc Tools
     public static final DeferredHolder<Item, Magnet> MAGNET                               = ITEMS.register("magnet",                              id -> new Magnet(new Item.Properties().setId(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.ITEM, id)).stacksTo(1), 8));
     public static final DeferredHolder<Item, Magnet> MAGNET_ADVANCED                      = ITEMS.register("advanced_magnet",                     id -> new Magnet(new Item.Properties().setId(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.ITEM, id)).stacksTo(1), 32));
-    public static final DeferredHolder<Item, Dislocator> DISLOCATOR                       = ITEMS.register("dislocator",                          id -> new Dislocator(new Item.Properties().setId(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.ITEM, id)).stacksTo(1).durability(31)));
+    public static final DeferredHolder<Item, Dislocator> DISLOCATOR                       = ITEMS.register("dislocator",                          id -> new Dislocator(new Item.Properties().setId(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.ITEM, id)).stacksTo(1).durability(31).repairable(DEContent.INGOT_DRACONIUM.get())));
     public static final DeferredHolder<Item, DislocatorAdvanced> DISLOCATOR_ADVANCED      = ITEMS.register("advanced_dislocator",                 id -> new DislocatorAdvanced(new Item.Properties().setId(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.ITEM, id)).stacksTo(1)));
     public static final DeferredHolder<Item, BoundDislocator> DISLOCATOR_P2P              = ITEMS.register("p2p_dislocator",                      id -> new BoundDislocator(new Item.Properties().setId(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.ITEM, id)).stacksTo(1)));
     public static final DeferredHolder<Item, BoundDislocator> DISLOCATOR_P2P_UNBOUND      = ITEMS.register("p2p_dislocator_unbound",              id -> new BoundDislocator(new Item.Properties().setId(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.ITEM, id)).stacksTo(1)));
@@ -236,9 +236,9 @@ public class DEContent {
     public static final DeferredHolder<Item, InfoTablet> INFO_TABLET                      = ITEMS.register("info_tablet",                         id -> new InfoTablet(new Item.Properties().setId(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.ITEM, id)).stacksTo(1)));
     public static final DeferredHolder<Item, MobSoul> MOB_SOUL                            = ITEMS.register("mob_soul",                            id -> new MobSoul(new Item.Properties().setId(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.ITEM, id))));
     //Tools
-    public static final TechProperties WYVERN_TOOLS = (TechProperties) new TechProperties(TechLevel.WYVERN).rarity(Rarity.UNCOMMON).stacksTo(1).fireResistant();
-    public static final TechProperties DRACONIC_TOOLS = (TechProperties) new TechProperties(TechLevel.DRACONIC).rarity(Rarity.RARE).stacksTo(1).fireResistant();
-    public static final TechProperties CHAOTIC_TOOLS = (TechProperties) new TechProperties(TechLevel.CHAOTIC).rarity(Rarity.EPIC).stacksTo(1).fireResistant();
+    public static final java.util.function.Supplier<TechProperties> WYVERN_TOOLS = () -> (TechProperties) new TechProperties(TechLevel.WYVERN).rarity(Rarity.UNCOMMON).stacksTo(1).fireResistant();
+    public static final java.util.function.Supplier<TechProperties> DRACONIC_TOOLS = () -> (TechProperties) new TechProperties(TechLevel.DRACONIC).rarity(Rarity.RARE).stacksTo(1).fireResistant();
+    public static final java.util.function.Supplier<TechProperties> CHAOTIC_TOOLS = () -> (TechProperties) new TechProperties(TechLevel.CHAOTIC).rarity(Rarity.EPIC).stacksTo(1).fireResistant();
     public static DETier WYVERN_TIER = new DETier(TechLevel.WYVERN);
     public static DETier DRACONIC_TIER = new DETier(TechLevel.DRACONIC);
     public static DETier CHAOTIC_TIER = new DETier(TechLevel.CHAOTIC);

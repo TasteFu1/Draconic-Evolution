@@ -1,5 +1,6 @@
 package com.brandon3055.draconicevolution.init;
 
+import com.brandon3055.draconicevolution.client.DEParticleEffects;
 import com.brandon3055.brandonscore.client.gui.modular.sprite.GuiTextures;
 import com.brandon3055.brandonscore.BrandonsCore;
 import com.brandon3055.brandonscore.api.hud.AbstractHudElement;
@@ -83,7 +84,7 @@ public class DEClient {
         modBus.addListener(DEClient::onResourceReload);
         modBus.addListener(DEClient::registerClientExtensions);
         modBus.addListener(DEClient::registerMenuScreens);
-        modBus.addListener(DEParticles::registerFactories);
+        modBus.addListener(DEParticleEffects::registerFactories);
         modBus.addListener(com.brandon3055.draconicevolution.client.render.particle.DEParticleLayers::register);
 
 //        modBus.addListener((RegisterColorHandlersEvent.Block event) -> moduleSpriteUploader = new ModuleSpriteUploader());
@@ -112,7 +113,9 @@ public class DEClient {
     }
 
     public static void onResourceReload(AddClientReloadListenersEvent event) {
-        event.addListener(net.minecraft.resources.Identifier.fromNamespaceAndPath(MODID, "module_atlas"), ModuleTextures.getAtlasHolder());
+        var modules = ModuleTextures.getAtlasHolder();
+        modules.init();
+        event.addListener(net.minecraft.resources.Identifier.fromNamespaceAndPath(MODID, "module_atlas"), modules);
     }
 
     private static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {

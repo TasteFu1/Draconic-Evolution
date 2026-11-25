@@ -74,7 +74,7 @@ public class ItemCore extends Item {
 
                 ItemStack spawner = new ItemStack(DEContent.STABILIZED_SPAWNER.get());
                 CompoundTag saveData = new CompoundTag();
-                saveData.put("mob_soul", soul.save(world.registryAccess()));
+                saveData.put("mob_soul", ItemStack.CODEC.encodeStart(world.registryAccess().createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE), soul).getOrThrow());
                 CompoundTag tierData = new CompoundTag();
                 tierData.putByte("value", (byte) tier.ordinal());
                 saveData.put("spawner_tier", tierData);
@@ -82,7 +82,7 @@ public class ItemCore extends Item {
                 CompoundTag managedData = new CompoundTag();
                 managedData.put(BlockBCore.BC_MANAGED_DATA_FLAG, saveData);
 
-                spawner.set(BlockBCore.BC_TILE_DATA_TAG, CustomData.of(managedData));
+                com.brandon3055.brandonscore.utils.ItemNBTHelper.updateCompound(spawner, tag -> tag.put(BlockBCore.BC_TILE_DATA_TAG, managedData));
 
                 world.removeBlock(pos, false);
                 world.addFreshEntity(new ItemEntity(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, spawner));

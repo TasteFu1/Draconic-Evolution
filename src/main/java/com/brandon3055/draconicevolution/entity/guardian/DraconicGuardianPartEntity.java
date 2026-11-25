@@ -61,7 +61,7 @@ public class DraconicGuardianPartEntity extends PartEntity<DraconicGuardianEntit
 
    @Override
    public boolean hurtServer(ServerLevel level, DamageSource source, float amount) { // port-26.1.2: Entity.hurt -> hurtServer
-      return !this.isInvulnerableTo(source) && this.dragon.attackEntityPartFrom(this, source, amount);
+      return !this.isInvulnerableToBase(source) && this.dragon.attackEntityPartFrom(this, source, amount);
    }
 
    @Override

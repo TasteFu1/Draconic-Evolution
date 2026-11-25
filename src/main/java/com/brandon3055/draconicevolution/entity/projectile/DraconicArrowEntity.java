@@ -518,7 +518,7 @@ public class DraconicArrowEntity extends AbstractArrow {
                         }
                     }
                     if (canPass) {
-                        this.playSound(SoundEvents.ANCIENT_DEBRIS_BREAK.value(), 1.0F, 1.2F / (this.getRandom().nextFloat() * 0.2F + 0.9F));
+                        this.playSound(SoundEvents.ANCIENT_DEBRIS_BREAK, 1.0F, 1.2F / (this.getRandom().nextFloat() * 0.2F + 0.9F));
                         for (int i = 0; i < 25; i++) {
                             Vec3 critPos = traceResult.getLocation().add(getDeltaMovement().normalize().multiply(2, 2, 2).add((-0.5 + random.nextGaussian()) * 0.2, (-0.5 + random.nextGaussian()) * 0.2, (-0.5 + random.nextGaussian()) * 0.2));
                             Vec3 critVel = getDeltaMovement().normalize().multiply(5, 5, 5);

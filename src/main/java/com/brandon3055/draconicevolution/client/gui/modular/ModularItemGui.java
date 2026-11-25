@@ -1,5 +1,8 @@
 package com.brandon3055.draconicevolution.client.gui.modular;
 
+import net.minecraft.resources.Identifier;
+import net.minecraft.client.renderer.Sheets;
+import com.brandon3055.brandonscore.client.gui.modular.sprite.Material;
 import com.brandon3055.brandonscore.client.gui.modular.ModularGui;
 import com.brandon3055.brandonscore.client.gui.modular.ModularGuiContainer;
 import com.brandon3055.brandonscore.client.gui.modular.elements.*;
@@ -17,7 +20,6 @@ import com.brandon3055.brandonscore.client.gui.GuiToolkit;
 import com.brandon3055.brandonscore.client.gui.HudConfigGui;
 import com.brandon3055.brandonscore.client.gui.InfoPanel;
 import com.brandon3055.brandonscore.client.gui.modulargui.templates.ButtonRow;
-import com.brandon3055.brandonscore.client.render.RenderUtils;
 import com.brandon3055.draconicevolution.api.capability.DECapabilities;
 import com.brandon3055.draconicevolution.api.modules.lib.ModuleGrid;
 import com.brandon3055.draconicevolution.client.gui.ModuleGridRenderer;
@@ -53,6 +55,14 @@ public class ModularItemGui extends ContainerGuiProvider<ModularItemMenu> {
     private ModuleGridRenderer gridRenderer;
     private ModularItemMenu menu;
     private InfoPanel infoPanel;
+
+    private static Material slotIcon(Identifier texture) {
+        String path = texture.getPath();
+        if (path.startsWith("textures/") && path.endsWith(".png")) {
+            path = path.substring("textures/".length(), path.length() - ".png".length());
+        }
+        return Material.fromAtlas(Sheets.GUI_SHEET, texture.withPath(path).toString());
+    }
 
     @Override
     public GuiElement<?> createRootElement(ModularGui gui) {
@@ -123,7 +133,7 @@ public class ModularItemGui extends ContainerGuiProvider<ModularItemMenu> {
         GuiSlots slots = new GuiSlots(scroll.getContentElement(), screenAccess, menu.curios, 1)
                 .setSlotOverlay(this::renderSlotOverlay)
                 .setSlotTexture(slot -> BCGuiTextures.getThemed("slot"))
-                .setEmptyIconI(i -> RenderUtils.fromRawTexture(EquipmentManager.getIcons(menu.inventory.player).get(i)))
+                .setEmptyIconI(i -> slotIcon(EquipmentManager.getIcons(menu.inventory.player).get(i)))
                 .constrain(LEFT, match(scroll.getContentElement().get(LEFT)))
                 .constrain(TOP, match(scroll.getContentElement().get(TOP)));
 

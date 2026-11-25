@@ -7,7 +7,6 @@ import com.brandon3055.brandonscore.client.gui.modular.lib.geometry.Constraint;
 import com.brandon3055.brandonscore.client.gui.modular.lib.geometry.GuiParent;
 import com.brandon3055.brandonscore.BCConfig;
 import com.brandon3055.brandonscore.client.gui.GuiToolkit.Palette;
-import com.brandon3055.brandonscore.client.render.RenderUtils;
 import com.brandon3055.draconicevolution.api.capability.ModuleHost;
 import com.brandon3055.draconicevolution.api.modules.Module;
 import com.brandon3055.draconicevolution.api.modules.items.ModuleItem;
@@ -129,7 +128,7 @@ public class ModuleGridRenderer extends GuiElement<ModuleGridRenderer> implement
 
 
                 render.pose().pushPose();
-                entity.renderModule(this, render, x - (mw / 2), y - (mh / 2), mw, mh, x, y, true, RenderUtils.partialTick());
+                entity.renderModule(this, render, x - (mw / 2), y - (mh / 2), mw, mh, x, y, true, mc().getDeltaTracker().getGameTimeDeltaPartialTick(false));
                 if (stack.getCount() > 1 || altText != null) {
                     String s = altText == null ? String.valueOf(stack.getCount()) : altText;
                     render.drawString(s, (float) (x - font().width(s)) + (mw / 2F) + 1, (float) (y - font().lineHeight) + (mh / 2F) + 2, 0xffffff, true);
@@ -176,7 +175,7 @@ public class ModuleGridRenderer extends GuiElement<ModuleGridRenderer> implement
                         if (pickBlock) {
                             handleGridClick(host, cell, mouseX, mouseY, button, ContainerInput.CLONE); //Creative Clone
                         } else {
-                            boolean shiftClick = (InputConstants.isKeyDown(mc().getWindow().getWindow(), 340) || InputConstants.isKeyDown(mc().getWindow().getWindow(), 344));
+                            boolean shiftClick = mc().hasShiftDown();
                             ContainerInput clicktype = ContainerInput.PICKUP;
                             if (shiftClick) {
                                 clicktype = ContainerInput.QUICK_MOVE;

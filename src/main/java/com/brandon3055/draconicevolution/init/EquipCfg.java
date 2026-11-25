@@ -276,19 +276,19 @@ public class EquipCfg {
         equipTag.getValue("draconiumBaseEnergy")
                 .setComment("This is the base energy value for each tier before the type multiplier is applied.\nInternal Default Value: " + DRACONIUM_BASE_ENERGY)
                 .setDefaultLong(-99)
-                .onSync((tag, type) -> draconiumBaseEnergy = tag.getAsLong() != -99 ? tag.getAsLong() : DRACONIUM_BASE_ENERGY);
+                .onSync((tag, type) -> draconiumBaseEnergy = tag.getLong() != -99 ? tag.getLong() : DRACONIUM_BASE_ENERGY);
         equipTag.getValue("wyvernBaseEnergy")
                 .setComment("This is the base energy value for each tier before the type multiplier is applied.\nInternal Default Value: " + WYVERN_BASE_ENERGY)
                 .setDefaultLong(-99)
-                .onSync((tag, type) -> wyvernBaseEnergy = tag.getAsLong() != -99 ? tag.getAsLong() : WYVERN_BASE_ENERGY);
+                .onSync((tag, type) -> wyvernBaseEnergy = tag.getLong() != -99 ? tag.getLong() : WYVERN_BASE_ENERGY);
         equipTag.getValue("draconicBaseEnergy")
                 .setComment("This is the base energy value for each tier before the type multiplier is applied.\nInternal Default Value: " + DRACONIC_BASE_ENERGY)
                 .setDefaultLong(-99)
-                .onSync((tag, type) -> draconicBaseEnergy = tag.getAsLong() != -99 ? tag.getAsLong() : DRACONIC_BASE_ENERGY);
+                .onSync((tag, type) -> draconicBaseEnergy = tag.getLong() != -99 ? tag.getLong() : DRACONIC_BASE_ENERGY);
         equipTag.getValue("chaoticBaseEnergy")
                 .setComment("This is the base energy value for each tier before the type multiplier is applied.\nInternal Default Value: " + CHAOTIC_BASE_ENERGY)
                 .setDefaultLong(-99)
-                .onSync((tag, type) -> chaoticBaseEnergy = tag.getAsLong() != -99 ? tag.getAsLong() : CHAOTIC_BASE_ENERGY);
+                .onSync((tag, type) -> chaoticBaseEnergy = tag.getLong() != -99 ? tag.getLong() : CHAOTIC_BASE_ENERGY);
 
         equipTag.getValue("staffEnergyMult")
                 .setComment("This is a multiplier that is applied to the base energy value.\nInternal Default Value: " + STAFF_ENERGY_MULT)

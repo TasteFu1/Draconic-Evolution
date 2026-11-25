@@ -51,9 +51,9 @@ public class TileTarget extends DislocatorTarget {
             if (pos != null) {
                 Vec2 vec = target.getArrivalFacing(linkID);
                 if (vec != null) {
-                    return TargetPos.of(new Vector3(pos), worldKey, vec);
+                    return new TargetPos(new Vector3(pos), worldKey, vec.x, vec.y);
                 }else {
-                    return TargetPos.of(new Vector3(pos), worldKey);
+                    return new TargetPos(new Vector3(pos), worldKey).setIncludeHeading(false);
                 }
             }
         }

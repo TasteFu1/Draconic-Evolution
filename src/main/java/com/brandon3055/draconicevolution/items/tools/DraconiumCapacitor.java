@@ -45,7 +45,7 @@ public class DraconiumCapacitor extends Item implements IInvCharge, IModularEner
     private TechLevel techLevel;
 
     public DraconiumCapacitor(TechProperties properties) {
-        super(properties);
+        super(properties.enchantable(DETier.getEnchantability(properties.getTechLevel())));
         techLevel = properties.getTechLevel();
     }
 
@@ -150,12 +150,15 @@ public class DraconiumCapacitor extends Item implements IInvCharge, IModularEner
             }
         } else {
             if (held) {
-                entity.getHandSlots().forEach(stacks::add);
+                stacks.add(entity.getMainHandItem());
+                stacks.add(entity.getOffhandItem());
             }
         }
 
         if (armor) {
-            entity.getArmorSlots().forEach(stacks::add);
+            for (var armorSlot : net.minecraft.world.entity.EquipmentSlot.VALUES) {
+                if (armorSlot.getType() == net.minecraft.world.entity.EquipmentSlot.Type.HUMANOID_ARMOR) stacks.add(entity.getItemBySlot(armorSlot));
+            }
         }
 
         stacks.remove(stack);
@@ -171,7 +174,7 @@ public class DraconiumCapacitor extends Item implements IInvCharge, IModularEner
             for (ItemStack stack : stacks) {
                 if (EnergyUtils.canReceiveEnergy(stack)) {
                     Item item = stack.getItem();
-                    if (item instanceof IInvCharge && !((IInvCharge) item).canCharge(stack, player, DataUtils.contains(player.getHandSlots(), stack))) {
+                    if (item instanceof IInvCharge && !((IInvCharge) item).canCharge(stack, player, (stack == player.getMainHandItem() || stack == player.getOffhandItem()))) {
                         continue;
                     }
                     EnergyUtils.insertEnergy(stack, EnergyUtils.extractEnergy(capacitor, EnergyUtils.insertEnergy(stack, storage.getOPStored(), true), false), false);
@@ -187,15 +190,7 @@ public class DraconiumCapacitor extends Item implements IInvCharge, IModularEner
         tooltip.forEach(builder);
     }
 
-    @Override
-    public int getEnchantmentValue() {
-        return DETier.getEnchantability(techLevel);
-    }
 
-    @Override
-    public boolean isEnchantable(ItemStack stack) {
-        return true;
-    }
 
     @Override
     public boolean isBarVisible(ItemStack stack) {

@@ -88,9 +88,7 @@ import net.minecraft.world.phys.AABB;
 
 import net.minecraft.world.phys.BlockHitResult;
 
-import net.neoforged.api.distmarker.Dist;
 
-import net.neoforged.api.distmarker.OnlyIn;
 
 
 
@@ -469,7 +467,6 @@ public abstract class TileCrystalBase extends TileBCore implements ITilePlaceLis
     //region Render
 
     @Override
-    @OnlyIn (Dist.CLIENT)
     public abstract CrystalFXBase createStaticFX();
 
     public void addDisplayData(List<Component> displayList) {
@@ -484,7 +481,6 @@ public abstract class TileCrystalBase extends TileBCore implements ITilePlaceLis
     }
 
     @Override
-    @OnlyIn(Dist.CLIENT)
     public ENetFXHandler createClientFXHandler() {
         return new ENetFXHandlerClient(this);
     }

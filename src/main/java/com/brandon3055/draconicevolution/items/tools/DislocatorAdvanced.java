@@ -1,5 +1,6 @@
 package com.brandon3055.draconicevolution.items.tools;
 
+import com.brandon3055.draconicevolution.lib.CoreDataCodecs;
 import codechicken.lib.data.MCDataInput;
 
 import codechicken.lib.data.MCDataOutput;
@@ -102,13 +103,11 @@ import net.minecraft.world.phys.Vec2;
 
 import net.minecraft.world.phys.Vec3;
 
-import net.neoforged.api.distmarker.Dist;
 
-import net.neoforged.api.distmarker.OnlyIn;
 
 import net.neoforged.neoforge.common.Tags;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 
 
@@ -247,9 +246,8 @@ public class DislocatorAdvanced extends Dislocator {
         return InteractionResult.PASS;
     }
 
-    @OnlyIn (Dist.CLIENT)
     private void openGui(ItemStack stack, Player player) {
-        Minecraft.getInstance().setScreen(new DislocatorGui.Screen(stack.getHoverName(), player));
+        com.brandon3055.draconicevolution.client.DEClientAccess.openDislocator(stack, player);
     }
 
     private void handleTeleport(Player player, ItemStack stack, TargetPos targetPos, boolean showFuel) {
@@ -284,7 +282,7 @@ public class DislocatorAdvanced extends Dislocator {
             if (showFuel) {
                 player.sendOverlayMessage(Component.translatable("dislocate.draconicevolution.teleport_fuel").append(" " + getFuel(stack)).withStyle(ChatFormatting.WHITE));
             }
-            player.getCooldowns().addCooldown(stack.getItem(), 5);
+            player.getCooldowns().addCooldown(stack, 5);
         }
 
         Vec3 playerVec = player.getEyePosition(1);
@@ -334,17 +332,16 @@ public class DislocatorAdvanced extends Dislocator {
         return DataUtils.safeGet(getTargetList(stack), getSelectedIndex(stack));
     }
 
-    @OnlyIn (Dist.CLIENT)
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flagIn) {
+    public void appendHoverText(ItemStack stack, TooltipContext context, net.minecraft.world.item.component.TooltipDisplay display, java.util.function.Consumer<Component> tooltip, TooltipFlag flagIn) {
         DislocatorTarget selected = getSelected(stack);
         int fuel = getFuel(stack);
         if (selected != null) {
-            tooltip.add(Component.literal(selected.getName()).withStyle(ChatFormatting.GOLD));
+            tooltip.accept(Component.literal(selected.getName()).withStyle(ChatFormatting.GOLD));
         }
-        tooltip.add(Component.translatable("dislocate.draconicevolution.fuel").append(" " + fuel).withStyle(ChatFormatting.WHITE));
-        tooltip.add(Component.translatable("dislocate.draconicevolution.to_open_gui").withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.ITALIC));
-//        tooltip.add(new TranslationTextComponent("dislocate.draconicevolution.scroll_change_select").withStyle(TextFormatting.DARK_PURPLE, TextFormatting.ITALIC));
+        tooltip.accept(Component.translatable("dislocate.draconicevolution.fuel").append(" " + fuel).withStyle(ChatFormatting.WHITE));
+        tooltip.accept(Component.translatable("dislocate.draconicevolution.to_open_gui").withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.ITALIC));
+//        tooltip.accept(new TranslationTextComponent("dislocate.draconicevolution.scroll_change_select").withStyle(TextFormatting.DARK_PURPLE, TextFormatting.ITALIC));
     }
 
     @Override
@@ -356,10 +353,6 @@ public class DislocatorAdvanced extends Dislocator {
         displayList.add(Component.translatable("dislocate.draconicevolution.fuel").append(" " + getFuel(stack)));
     }
 
-    @Override
-    public boolean isValidRepairItem(ItemStack toRepair, ItemStack repair) {
-        return false;
-    }
 
     public int getFuel(ItemStack stack) {
         return stack.getOrDefault(ItemData.DISLOCATOR_FUEL, 0);
@@ -544,7 +537,7 @@ public class DislocatorAdvanced extends Dislocator {
             return stack;
         }
 
-        for (int i = 0; i < player.getInventory().getContainerSize() - player.getInventory().offhand.size(); i++) {
+        for (int i = 0; i < player.getInventory().getNonEquipmentItems().size(); i++) {
             stack = player.getInventory().getItem(i);
             if (stack.getItem() == DEContent.DISLOCATOR_ADVANCED.get()) {
                 return stack;
@@ -555,14 +548,14 @@ public class DislocatorAdvanced extends Dislocator {
 
     public static class DislocatorTarget {
         public static final Codec<DislocatorTarget> CODEC = RecordCodecBuilder.create(b -> b.group(
-                        TargetPos.CODEC.fieldOf("pos").forGetter(DislocatorTarget::getPos),
+                        CoreDataCodecs.TARGET_POS.fieldOf("pos").forGetter(DislocatorTarget::getPos),
                         Codec.STRING.fieldOf("name").forGetter(DislocatorTarget::getName),
                         Codec.BOOL.fieldOf("locked").forGetter(DislocatorTarget::isLocked)
                 ).apply(b, DislocatorTarget::new)
         );
 
-        public static final StreamCodec<ByteBuf, DislocatorTarget> STREAM_CODEC = StreamCodec.composite(
-                TargetPos.STREAM_CODEC, DislocatorTarget::getPos,
+        public static final StreamCodec<net.minecraft.network.RegistryFriendlyByteBuf, DislocatorTarget> STREAM_CODEC = StreamCodec.composite(
+                CoreDataCodecs.TARGET_POS_STREAM, DislocatorTarget::getPos,
                 ByteBufCodecs.STRING_UTF8, DislocatorTarget::getName,
                 ByteBufCodecs.BOOL, DislocatorTarget::isLocked,
                 DislocatorTarget::new
@@ -584,7 +577,7 @@ public class DislocatorAdvanced extends Dislocator {
         }
 
         public DislocatorTarget(double x, double y, double z, ResourceKey<Level> dimension) {
-            pos = TargetPos.of(x, y, z, dimension);
+            pos = new TargetPos(x, y, z, dimension).setIncludeHeading(false);
         }
 
         public DislocatorTarget(double x, double y, double z, ResourceKey<Level> dimension, float xRot, float yRot) {
@@ -602,7 +595,7 @@ public class DislocatorAdvanced extends Dislocator {
             return this;
         }
 
-        public void setPos(@NonNull TargetPos pos) {
+        public void setPos(@NotNull TargetPos pos) {
             this.pos = pos;
         }
 

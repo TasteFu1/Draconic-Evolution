@@ -6,14 +6,10 @@ import com.brandon3055.brandonscore.lib.Vec3D;
 import com.brandon3055.draconicevolution.blocks.energynet.EnergyCrystal;
 import com.brandon3055.draconicevolution.blocks.tileentity.TileDislocatorReceptacle;
 import com.brandon3055.draconicevolution.client.render.effect.CrystalFXBase;
-import com.brandon3055.draconicevolution.client.render.effect.CrystalFXRing;
 import com.brandon3055.draconicevolution.init.DEContent;
-import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 
 /**
@@ -40,10 +36,9 @@ public class TileCrystalRelay extends TileCrystalBase {
         return EnergyCrystal.CrystalType.RELAY;
     }
 
-    @OnlyIn(Dist.CLIENT)
     @Override
     public CrystalFXBase createStaticFX() {
-        return new CrystalFXRing((ClientLevel)level, this);
+        return com.brandon3055.draconicevolution.client.DEParticleEffects.createCrystalEffect(this, false);
     }
 
     @Override

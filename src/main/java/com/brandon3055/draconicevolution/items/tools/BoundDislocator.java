@@ -56,9 +56,7 @@ import net.minecraft.world.item.TooltipFlag;
 
 import net.minecraft.world.level.Level;
 
-import net.neoforged.api.distmarker.Dist;
 
-import net.neoforged.api.distmarker.OnlyIn;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -138,13 +136,13 @@ public class BoundDislocator extends Dislocator {
     }
 
     @Override
-    public void inventoryTick(ItemStack stack, Level world, Entity entity, int itemSlot, boolean isSelected) {
+    public void inventoryTick(ItemStack stack, ServerLevel world, Entity entity, net.minecraft.world.entity.EquipmentSlot slot) {
         if (world instanceof ServerLevel && TimeKeeper.getServerTick() % 20 == 0) {
             if (isValid(stack) && !isPlayer(stack) && entity instanceof Player) {
                 DislocatorSaveData.updateLinkTarget(world, stack, new PlayerTarget((Player) entity));
             }
         }
-        super.inventoryTick(stack, world, entity, itemSlot, isSelected);
+        super.inventoryTick(stack, world, entity, slot);
     }
 
     @Override
@@ -318,18 +316,17 @@ public class BoundDislocator extends Dislocator {
         }
     }
 
-    @OnlyIn(Dist.CLIENT)
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flagIn) {
+    public void appendHoverText(ItemStack stack, TooltipContext context, net.minecraft.world.item.component.TooltipDisplay display, java.util.function.Consumer<Component> tooltip, TooltipFlag flagIn) {
         if (stack.getItem() == DEContent.DISLOCATOR_P2P_UNBOUND.get()) {
-            tooltip.add(Component.translatable("dislocate.draconicevolution.bound.click_to_link").withStyle(ChatFormatting.GREEN));
+            tooltip.accept(Component.translatable("dislocate.draconicevolution.bound.click_to_link").withStyle(ChatFormatting.GREEN));
         } else if (stack.getItem() == DEContent.DISLOCATOR_PLAYER_UNBOUND.get()) {
-            tooltip.add(Component.translatable("dislocate.draconicevolution.bound.click_to_link_self").withStyle(ChatFormatting.GREEN));
+            tooltip.accept(Component.translatable("dislocate.draconicevolution.bound.click_to_link_self").withStyle(ChatFormatting.GREEN));
         } else {
             if (isPlayer(stack)) {
-                tooltip.add(Component.translatable("dislocate.draconicevolution.bound.player_link").append(": ").append(stack.getOrDefault(ItemData.DISLOCATOR_PLAYER_NAME, "Unknown Player")).withStyle(ChatFormatting.BLUE));
+                tooltip.accept(Component.translatable("dislocate.draconicevolution.bound.player_link").append(": ").append(stack.getOrDefault(ItemData.DISLOCATOR_PLAYER_NAME, "Unknown Player")).withStyle(ChatFormatting.BLUE));
             } else {
-                tooltip.add(Component.translatable("dislocate.draconicevolution.bound.link_id").append(": ").append(String.valueOf(getLinkId(stack))).withStyle(ChatFormatting.BLUE));
+                tooltip.accept(Component.translatable("dislocate.draconicevolution.bound.link_id").append(": ").append(String.valueOf(getLinkId(stack))).withStyle(ChatFormatting.BLUE));
             }
         }
     }

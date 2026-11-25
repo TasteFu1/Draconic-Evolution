@@ -4,9 +4,12 @@ import net.minecraft.server.level.ServerLevel;
 
 import com.brandon3055.brandonscore.api.TechLevel;
 import com.brandon3055.brandonscore.api.power.OPStorage;
+import net.neoforged.neoforge.transfer.TransferPreconditions;
+import net.neoforged.neoforge.transfer.transaction.TransactionContext;
+import net.neoforged.neoforge.transfer.transaction.SnapshotJournal;
 import com.brandon3055.brandonscore.blocks.TileBCore;
 import com.brandon3055.brandonscore.capability.CapabilityOP;
-import com.brandon3055.brandonscore.inventory.TileItemStackHandler;
+import com.brandon3055.draconicevolution.inventory.ManagedItemHandler;
 import com.brandon3055.brandonscore.lib.Vec3I;
 import com.brandon3055.brandonscore.lib.datamanager.DataFlags;
 import com.brandon3055.brandonscore.lib.datamanager.ManagedBool;
@@ -36,15 +39,46 @@ public class TileFusionCraftingInjector extends TileBCore implements IFusionInje
     public final ManagedLong chargeRate = register(new ManagedLong("charge_rate", DataFlags.SAVE_NBT));
     public final ManagedBool singleItem = register(new ManagedBool("single_item", DataFlags.SAVE_NBT_SYNC_TILE, DataFlags.SYNC_ON_SET));
     public final ManagedVec3I corePos = register(new ManagedVec3I("core_pos", new Vec3I(0, -9999, 0), DataFlags.SAVE_NBT_SYNC_TILE, DataFlags.SYNC_ON_SET));
-    public TileItemStackHandler itemHandler = new TileItemStackHandler(this, 1);
+    public ManagedItemHandler itemHandler = new ManagedItemHandler(this, 1);
     private TechLevel techLevelCache = null;
 
     public TileFusionCraftingInjector(BlockPos pos, BlockState state) {
         super(DEContent.TILE_CRAFTING_INJECTOR.get(), pos, state);
-        capManager.setManaged("inventory", Capabilities.Item.BLOCK, itemHandler).saveBoth().syncTile();
+        capManager.setInternalManaged("inventory", Capabilities.Item.BLOCK, itemHandler).saveBoth().syncTile();
         itemHandler.setPerSlotLimit(() -> singleItem.get() ? 1 : 64);
         itemHandler.setContentsChangeListener(i -> inventoryChange());
         capManager.set(CapabilityOP.OP, new OPStorage(this, 0) {
+            private long pendingCharge;
+            private final SnapshotJournal<Long> journal = new SnapshotJournal<>() {
+                @Override
+                protected Long createSnapshot() {
+                    return pendingCharge;
+                }
+
+                @Override
+                protected void revertToSnapshot(Long value) {
+                    pendingCharge = value;
+                }
+
+                @Override
+                protected void onRootCommit(Long original) {
+                    long charge = pendingCharge;
+                    pendingCharge = 0;
+                    TileFusionCraftingInjector.this.energy.add(charge);
+                }
+            };
+
+            @Override
+            public int insert(int amount, TransactionContext transaction) {
+                TransferPreconditions.checkNonNegative(amount);
+                int accepted = (int) receiveOP(amount, true);
+                if (accepted > 0) {
+                    journal.updateSnapshots(transaction);
+                    pendingCharge += accepted;
+                }
+                return accepted;
+            }
+
             @Override
             public long receiveOP(long maxReceive, boolean simulate) {
                 long opStored = getOPStored();
@@ -62,7 +96,7 @@ public class TileFusionCraftingInjector extends TileBCore implements IFusionInje
 
             @Override
             public long getOPStored() {
-                return TileFusionCraftingInjector.this.energy.get();
+                return TileFusionCraftingInjector.this.energy.get() + pendingCharge;
             }
 
             @Override
@@ -72,9 +106,15 @@ public class TileFusionCraftingInjector extends TileBCore implements IFusionInje
         });
     }
 
+    @Override
+    public void setLevel(net.minecraft.world.level.Level level) {
+        super.setLevel(level);
+        itemHandler.loadPending();
+    }
+
     public static void register(RegisterCapabilitiesEvent event) {
         com.brandon3055.brandonscore.capability.CapabilityOP.registerBlockEntity(event, DEContent.TILE_CRAFTING_INJECTOR.get());
-        capability(event, DEContent.TILE_CRAFTING_INJECTOR, Capabilities.Item.BLOCK);
+        event.registerBlockEntity(Capabilities.Item.BLOCK, DEContent.TILE_CRAFTING_INJECTOR.get(), (tile, side) -> tile.itemHandler.automation);
     }
 
     public boolean setCore(@Nullable TileFusionCraftingCore core) {
@@ -198,13 +238,9 @@ public class TileFusionCraftingInjector extends TileBCore implements IFusionInje
 //        updateBlock();
 //    }
 
-    // port-26.1.2: BlockBehaviour.onRemove удалён в 26 — логика перенесена сюда;
-    // срабатывает при удалении BE из-за смены блока (guard отличает выгрузку чанка).
     @Override
-    public void setRemoved() {
-        super.setRemoved();
-        if (level() instanceof ServerLevel sl && sl.getBlockState(worldPosition).getBlock() != getBlockState().getBlock()) {
-            onDestroyed();
-        }
+    public void preRemoveSideEffects(BlockPos pos, BlockState state) {
+        super.preRemoveSideEffects(pos, state);
+        onDestroyed();
     }
 }

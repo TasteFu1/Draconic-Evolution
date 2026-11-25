@@ -18,7 +18,6 @@ import com.brandon3055.draconicevolution.blocks.energynet.EnergyCrystal;
 
 import com.brandon3055.draconicevolution.client.render.effect.CrystalFXBase;
 
-import com.brandon3055.draconicevolution.client.render.effect.CrystalFXIO;
 
 import com.brandon3055.draconicevolution.init.DEContent;
 
@@ -26,7 +25,6 @@ import java.util.List;
 
 import net.minecraft.ChatFormatting;
 
-import net.minecraft.client.multiplayer.ClientLevel;
 
 import net.minecraft.core.BlockPos;
 
@@ -54,9 +52,7 @@ import net.minecraft.world.level.block.state.BlockState;
 
 import net.minecraft.world.phys.BlockHitResult;
 
-import net.neoforged.api.distmarker.Dist;
 
-import net.neoforged.api.distmarker.OnlyIn;
 
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 
@@ -104,7 +100,7 @@ public class TileCrystalDirectIO extends TileCrystalBase   {
     //endregion
 
     @Override
-    public InteractionResult useWithoutItem(BlockState state, Player player, BlockHitResult hit) {
+    public InteractionResult onBlockUse(BlockState state, Player player, InteractionHand hand, BlockHitResult hit) {
         if (player instanceof ServerPlayer && player.isShiftKeyDown()) {
             outputMode.invert();
             updateRotation(facing.get());
@@ -120,10 +116,9 @@ public class TileCrystalDirectIO extends TileCrystalBase   {
         return EnergyCrystal.CrystalType.CRYSTAL_IO;
     }
 
-    @OnlyIn(Dist.CLIENT)
     @Override
     public CrystalFXBase createStaticFX() {
-        return new CrystalFXIO((ClientLevel)level, this);
+        return com.brandon3055.draconicevolution.client.DEParticleEffects.createCrystalEffect(this, true);
     }
 
     @Override

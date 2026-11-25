@@ -18,6 +18,10 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.transfer.TransferPreconditions;
+import net.neoforged.neoforge.transfer.energy.EnergyHandler;
+import net.neoforged.neoforge.transfer.transaction.Transaction;
+import net.neoforged.neoforge.transfer.transaction.TransactionContext;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 
 /**
@@ -25,32 +29,22 @@ import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
  */
 public class TileFluxGate extends TileFlowGate {
 
-    private OPRegulator inputReg = new OPRegulator(this, true);
-    private OPRegulator outputReg = new OPRegulator(this, false);
+    private final OPRegulator inputReg = new OPRegulator(this, true);
+    private final OPRegulator outputReg = new OPRegulator(this, false);
 
     public TileFluxGate(BlockPos pos, BlockState state) {
         super(DEContent.TILE_FLUX_GATE.get(), pos, state);
     }
 
-    //THis is an annoying hack required due to the fact you cant get the block state in onLoad()
-    private boolean capsLoaded = false;
+    private OPRegulator regulator(Direction side) {
+        if (side == getDirection()) return outputReg;
+        if (side == getDirection().getOpposite()) return inputReg;
+        return null;
+    }
 
     public static void register(RegisterCapabilitiesEvent event) {
-        event.registerBlockEntity(CapabilityOP.OP, DEContent.TILE_FLUX_GATE.get(), (tile, side) -> {
-            if (!tile.capsLoaded) {
-                tile.updateCapabilities();
-                tile.capsLoaded = true;
-            }
-            return tile.getCapManager().getCapability(CapabilityOP.OP, side);
-        });
-
-        event.registerBlockEntity(Capabilities.Energy.BLOCK, DEContent.TILE_FLUX_GATE.get(), (tile, side) -> {
-            if (!tile.capsLoaded) {
-                tile.updateCapabilities();
-                tile.capsLoaded = true;
-            }
-            return tile.getCapManager().getCapability(CapabilityOP.OP, side);
-        });
+        event.registerBlockEntity(CapabilityOP.OP, DEContent.TILE_FLUX_GATE.get(), TileFluxGate::regulator);
+        event.registerBlockEntity(Capabilities.Energy.BLOCK, DEContent.TILE_FLUX_GATE.get(), TileFluxGate::regulator);
     }
 
     @Override
@@ -58,16 +52,10 @@ public class TileFluxGate extends TileFlowGate {
         return "RF/t";
     }
 
-    private void updateCapabilities() {
-        capManager.remove(CapabilityOP.OP);
-        capManager.set(CapabilityOP.OP, inputReg, getDirection().getOpposite());
-        capManager.set(CapabilityOP.OP, outputReg, getDirection());
-    }
-
     @Override
-    public void setBlockState(BlockState p_155251_) {
-        super.setBlockState(p_155251_);
-        updateCapabilities();
+    public void setBlockState(BlockState state) {
+        super.setBlockState(state);
+        if (level != null) level.invalidateCapabilities(worldPosition);
     }
 
     //endregion
@@ -78,7 +66,7 @@ public class TileFluxGate extends TileFlowGate {
     }
 
     @Override
-    public InteractionResult useWithoutItem(BlockState state, Player player, BlockHitResult hit) {
+    public InteractionResult onBlockUse(BlockState state, Player player, InteractionHand hand, BlockHitResult hit) {
         if (player instanceof ServerPlayer) {
             player.openMenu(this, worldPosition);
             return InteractionResult.CONSUME;
@@ -108,14 +96,53 @@ public class TileFluxGate extends TileFlowGate {
         }
     }
 
-    private static class OPRegulator implements IOPStorage {
+    private static class OPRegulator implements IOPStorage, EnergyHandler {
 
-        private TileFluxGate tile;
-        private boolean isInput;
+        private final TileFluxGate tile;
+        private final boolean isInput;
 
         public OPRegulator(TileFluxGate tile, boolean isInput) {
             this.tile = tile;
             this.isInput = isInput;
+        }
+
+        @Override
+        public long getAmountAsLong() {
+            return getOPStored();
+        }
+
+        @Override
+        public long getCapacityAsLong() {
+            return getMaxOPStored();
+        }
+
+        @Override
+        public int insert(int amount, TransactionContext transaction) {
+            return transfer(amount, transaction, true);
+        }
+
+        @Override
+        public int extract(int amount, TransactionContext transaction) {
+            return transfer(amount, transaction, false);
+        }
+
+        private int transfer(int amount, TransactionContext transaction, boolean insert) {
+            TransferPreconditions.checkNonNegative(amount);
+            if (insert != isInput || tile.level == null) return 0;
+            int limit = (int) Math.min(amount, tile.availableFlow());
+            if (limit == 0) return 0;
+            Direction offset = isInput ? tile.getDirection() : tile.getDirection().getOpposite();
+            EnergyHandler neighbor = tile.level.getCapability(Capabilities.Energy.BLOCK,
+                    tile.worldPosition.relative(offset), offset.getOpposite());
+            if (neighbor == null) return 0;
+            try (Transaction nested = Transaction.open(transaction)) {
+                tile.flowJournal.updateSnapshots(nested);
+                tile.transferThisTick += limit;
+                int moved = insert ? neighbor.insert(limit, nested) : neighbor.extract(limit, nested);
+                tile.transferThisTick -= limit - moved;
+                nested.commit();
+                return moved;
+            }
         }
 
         @Override

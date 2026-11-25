@@ -2,12 +2,8 @@
   "type": "minecraft:crafting_shapeless",
   "category": "misc",
   "ingredients": [
-    {
-      "item": "draconicevolution:wyvern_io_crystal"
-    },
-    {
-      "item": "draconicevolution:wyvern_io_crystal"
-    }
+    "draconicevolution:wyvern_io_crystal",
+    "draconicevolution:wyvern_io_crystal"
   ],
   "result": {
     "count": 1,

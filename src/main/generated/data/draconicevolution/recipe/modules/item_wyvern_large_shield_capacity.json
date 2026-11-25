@@ -2,12 +2,8 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "#": {
-      "item": "draconicevolution:item_wyvern_shield_capacity"
-    },
-    "A": {
-      "item": "draconicevolution:draconium_core"
-    }
+    "#": "draconicevolution:item_wyvern_shield_capacity",
+    "A": "draconicevolution:draconium_core"
   },
   "pattern": [
     "#A#",

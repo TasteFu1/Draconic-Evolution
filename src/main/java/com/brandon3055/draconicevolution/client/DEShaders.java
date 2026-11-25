@@ -87,6 +87,12 @@ public class DEShaders {
         modBus.addListener((net.neoforged.neoforge.client.event.RegisterPictureInPictureRenderersEvent event) ->
             event.register(com.brandon3055.draconicevolution.client.shader.ReactorGuiState.class,
                 com.brandon3055.draconicevolution.client.shader.ReactorGuiRenderer::new));
+        modBus.addListener((net.neoforged.neoforge.client.event.RegisterPictureInPictureRenderersEvent event) ->
+                event.register(com.brandon3055.draconicevolution.client.shader.GuardianOverlayRenderer.State.class,
+                        com.brandon3055.draconicevolution.client.shader.GuardianOverlayRenderer::new));
+        modBus.addListener((net.neoforged.neoforge.client.event.RegisterPictureInPictureRenderersEvent event) ->
+                event.register(com.brandon3055.draconicevolution.client.shader.ExplosionFlashRenderer.State.class,
+                        com.brandon3055.draconicevolution.client.shader.ExplosionFlashRenderer::new));
         shieldShader.onShaderApplied(shader -> shader.getTimeUniform().glUniform1f(shieldTime()));
         energyCoreShader.onShaderApplied(shader -> shader.getTimeUniform().glUniform1f(shieldTime()));
         reactorBeamShader.onShaderApplied(shader -> shader.getTimeUniform().glUniform1f(shieldTime() * 0.4F));

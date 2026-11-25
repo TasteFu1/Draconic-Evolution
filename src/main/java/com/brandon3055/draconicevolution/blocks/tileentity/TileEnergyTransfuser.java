@@ -5,6 +5,11 @@ import codechicken.lib.raytracer.RayTracer;
 import codechicken.lib.raytracer.SubHitBlockHitResult;
 
 import com.brandon3055.brandonscore.api.power.IOPStorage;
+import com.brandon3055.draconicevolution.lib.TransactionalOPStorage;
+import net.neoforged.neoforge.transfer.access.ItemAccess;
+import net.neoforged.neoforge.transfer.energy.EnergyHandler;
+import net.neoforged.neoforge.transfer.TransferPreconditions;
+import net.neoforged.neoforge.transfer.transaction.TransactionContext;
 
 import com.brandon3055.brandonscore.blocks.TileBCore;
 
@@ -278,7 +283,35 @@ public class TileEnergyTransfuser extends TileBCore implements IInteractTile, Me
         }
     }
 
-    public class OPIOAdapter implements IOPStorage {
+    public class OPIOAdapter implements TransactionalOPStorage {
+        private final ManagedItemHandler[] slots = {itemNorth, itemEast, itemSouth, itemWest};
+
+        @Override
+        public int insert(int amount, TransactionContext transaction) {
+            return transfer(amount, transaction, true);
+        }
+
+        @Override
+        public int extract(int amount, TransactionContext transaction) {
+            return transfer(amount, transaction, false);
+        }
+
+        private int transfer(int amount, TransactionContext transaction, boolean charge) {
+            TransferPreconditions.checkNonNegative(amount);
+            if (!isTileEnabled()) return 0;
+            int remaining = amount;
+            for (int i = 0; i < slots.length && remaining > 0; i++) {
+                ItemIOMode mode = ioModes[i].get();
+                if (charge ? !mode.charge : !mode.discharge) continue;
+                ItemAccess access = ItemAccess.forHandlerIndexStrict(slots[i].automation, 0);
+                EnergyHandler item = access.getCapability(Capabilities.Energy.ITEM);
+                if (item == null) continue;
+                int limit = charge && balancedMode.get() ? amount / slots.length : remaining;
+                remaining -= charge ? item.insert(limit, transaction) : item.extract(limit, transaction);
+            }
+            return amount - remaining;
+        }
+
 
         @Override
         public long receiveOP(long maxReceive, boolean simulate) {

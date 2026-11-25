@@ -2,7 +2,9 @@ package com.brandon3055.draconicevolution.integration.equipment;
 
 import com.brandon3055.draconicevolution.init.DEContent;
 import com.brandon3055.draconicevolution.lib.WTFException;
-import net.minecraft.data.tags.TagsProvider;
+import com.brandon3055.brandonscore.capability.MultiCapabilityProvider;
+import net.minecraft.data.tags.TagAppender;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
@@ -41,6 +43,11 @@ public class CuriosIntegration extends EquipmentManager {
 //    }
 
     @Override
+    public void addEquipCaps(ItemStack stack, MultiCapabilityProvider provider) {
+        provider.addUnsavedCap(CuriosCapability.ITEM, new CurioWrapper(stack));
+    }
+
+    @Override
     public void registerCap(RegisterCapabilitiesEvent event, Item item) {
         event.registerItem(CuriosCapability.ITEM, (stack, context) -> new CurioWrapper(stack), item);
     }
@@ -74,8 +81,9 @@ public class CuriosIntegration extends EquipmentManager {
             ICuriosItemHandler handler = optional.orElseThrow(WTFException::new);
             List<Identifier> icons = new ArrayList<>();
             handler.getCurios().forEach((s, h) -> {
+                Identifier icon = CuriosApi.getSlot(s, entity.level()).map(type -> type.getIcon())
+                        .orElse(Identifier.fromNamespaceAndPath("curios", "slot/empty_curio_slot"));
                 for (int i = 0; i < h.getSlots(); i++) {
-                    Identifier icon = CuriosApi.getSlotIcon(s); //Why couldnt this just be the full path?
                     icons.add(Identifier.fromNamespaceAndPath(icon.getNamespace(), "textures/" + icon.getPath() + ".png"));
                 }
             });
@@ -87,7 +95,7 @@ public class CuriosIntegration extends EquipmentManager {
     /**
      * Data Gen
      */
-    public static void generateTags(Function<TagKey<Item>, TagsProvider.TagAppender> builder) {
+    public static void generateTags(Function<TagKey<Item>, TagAppender<ResourceKey<Item>, Item>> builder) {
         builder.apply(CURIO_TAG).add(
                 DEContent.DISLOCATOR_ADVANCED.getKey(),
                 DEContent.MAGNET.getKey(),

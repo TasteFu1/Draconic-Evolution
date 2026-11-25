@@ -8,7 +8,8 @@ import net.minecraft.core.BlockPos;
 
 import net.minecraft.core.particles.ParticleTypes;
 
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 import net.minecraft.server.level.ServerLevel;
 
@@ -32,9 +33,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 
 import net.minecraft.world.phys.AABB;
 
-import net.neoforged.api.distmarker.Dist;
 
-import net.neoforged.api.distmarker.OnlyIn;
 
 import net.neoforged.bus.api.Event;
 
@@ -62,7 +61,7 @@ public class StabilizedSpawnerLogic extends BaseSpawner {
 
     @Override
     public void clientTick(Level level, BlockPos pos) {
-        if (!this.isNearPlayer(level, pos)) {
+        if (!tile.isActive()) {
             this.prevMobRotation = this.mobRotation;
         } else {
             double d3 = (float) pos.getX() + level.getRandom().nextFloat();
@@ -82,7 +81,7 @@ public class StabilizedSpawnerLogic extends BaseSpawner {
 
     @Override
     public void serverTick(ServerLevel level, BlockPos pos) {
-        if (this.isNearPlayer(level, pos)) {
+        if (tile.isActive()) {
             if (tile.spawnDelay.get() == -1) {
                 this.resetTimer();
             }
@@ -176,25 +175,22 @@ public class StabilizedSpawnerLogic extends BaseSpawner {
         this.broadcastEvent(tile.getLevel(), tile.getBlockPos(), 1);
     }
 
-    @OnlyIn (Dist.CLIENT)
     @Override
     public double getSpin() {
         return mobRotation;
     }
 
-    @OnlyIn (Dist.CLIENT)
     @Override
-    public double getoSpin() {
+    public double getOSpin() {
         return prevMobRotation;
     }
 
     @Override
-    public CompoundTag save(CompoundTag compound) {
-        return compound;
+    public void save(ValueOutput output) {
     }
 
     @Override
-    public void load(@Nullable Level level, BlockPos pos, CompoundTag tag) {
+    public void load(@Nullable Level level, BlockPos pos, ValueInput input) {
     }
 
     @Override
@@ -213,8 +209,4 @@ public class StabilizedSpawnerLogic extends BaseSpawner {
         level.blockEvent(blockPos, Blocks.SPAWNER, event, 0);
     }
 
-    @Override
-    public boolean isNearPlayer(Level p_151344_, BlockPos p_151345_) {
-        return tile.isActive();
-    }
 }

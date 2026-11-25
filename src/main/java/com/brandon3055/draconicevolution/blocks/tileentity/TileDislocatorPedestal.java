@@ -2,7 +2,7 @@ package com.brandon3055.draconicevolution.blocks.tileentity;
 
 import com.brandon3055.brandonscore.blocks.TileBCore;
 
-import com.brandon3055.brandonscore.inventory.TileItemStackHandler;
+import com.brandon3055.draconicevolution.inventory.ManagedItemHandler;
 
 import com.brandon3055.brandonscore.lib.DelayedTask;
 
@@ -78,16 +78,22 @@ public class TileDislocatorPedestal extends TileBCore implements DislocatorEndPo
 //    private static final Identifier WOOL_TAG = new Identifier("forge:wool");
 
     public final ManagedInt rotation = register(new ManagedInt("rotation", 0, DataFlags.SAVE_NBT_SYNC_TILE, DataFlags.TRIGGER_UPDATE));
-    public TileItemStackHandler itemHandler = new TileItemStackHandler(this, 1);
+    public ManagedItemHandler itemHandler = new ManagedItemHandler(this, 1);
 
     public TileDislocatorPedestal(BlockPos pos, BlockState state) {
         super(DEContent.TILE_DISLOCATOR_PEDESTAL.get(), pos, state);
-        capManager.setManaged("inventory", Capabilities.Item.BLOCK, itemHandler).saveBoth().syncTile();
+        capManager.setInternalManaged("inventory", Capabilities.Item.BLOCK, itemHandler).saveBoth().syncTile();
         itemHandler.setSlotValidator(0, stack -> stack.getItem() instanceof Dislocator);
     }
 
+    @Override
+    public void setLevel(net.minecraft.world.level.Level level) {
+        super.setLevel(level);
+        itemHandler.loadPending();
+    }
+
     public static void register(RegisterCapabilitiesEvent event) {
-        capability(event, DEContent.TILE_DISLOCATOR_PEDESTAL, Capabilities.Item.BLOCK);
+        event.registerBlockEntity(Capabilities.Item.BLOCK, DEContent.TILE_DISLOCATOR_PEDESTAL.get(), (tile, side) -> tile.itemHandler.automation);
     }
 
     @Override

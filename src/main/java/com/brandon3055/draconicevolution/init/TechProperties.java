@@ -23,11 +23,6 @@ public class TechProperties extends Item.Properties {
         return this;
     }
 
-    public TechProperties copy() {
-        TechProperties copy = new TechProperties(techLevel);
-        copy.components.addAll(components.build());
-        return copy;
-    }
 
     @Deprecated
     public TechLevel getTechLevel() {

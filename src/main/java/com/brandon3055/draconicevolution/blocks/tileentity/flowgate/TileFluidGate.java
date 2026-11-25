@@ -16,7 +16,6 @@ import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.transfer.ResourceHandler;
 import net.neoforged.neoforge.transfer.fluid.FluidResource;
-import net.neoforged.neoforge.transfer.transaction.SnapshotJournal;
 import net.neoforged.neoforge.transfer.transaction.Transaction;
 import net.neoforged.neoforge.transfer.transaction.TransactionContext;
 import net.neoforged.neoforge.transfer.TransferPreconditions;
@@ -62,20 +61,6 @@ public class TileFluidGate extends TileFlowGate {
             return InteractionResult.CONSUME;
         }
         return InteractionResult.SUCCESS;
-    }
-
-    // Shared by both faces. Nested aborts restore the quota along with the neighboring storage.
-    private final SnapshotJournal<Long> flowJournal = new SnapshotJournal<>() {
-        @Override protected Long createSnapshot() { return transferThisTick; }
-        @Override protected void revertToSnapshot(Long snapshot) { transferThisTick = snapshot; }
-    };
-
-    private long availableFlow() {
-        // Querying/simulating must not populate a managed-field cache or send updates.
-        int signal = rsSignal.get() < 0 ? level.getBestNeighborSignal(worldPosition) : rsSignal.get();
-        long flow = flowOverridden.get() ? flowOverride.get() : minFlow.get()
-                + (long) ((signal / 15D) * (maxFlow.get() - minFlow.get()));
-        return Math.max(0, flow - transferThisTick);
     }
 
     private class FlowHandler implements ResourceHandler<FluidResource> {

@@ -45,9 +45,9 @@ public class ReactorSound extends SimpleSoundInstance implements TickableSoundIn
     @Override
     public void tick() {
         if (tile.roller != null) {
-            x = (float) tile.roller.pos.x();
+            x = (float) tile.roller.pos.x;
             y = (float) tile.roller.pos.y;
-            z = (float) tile.roller.pos.z();
+            z = (float) tile.roller.pos.z;
         }
         else {
             x = (float) tile.getBlockPos().getX() + 0.5F;

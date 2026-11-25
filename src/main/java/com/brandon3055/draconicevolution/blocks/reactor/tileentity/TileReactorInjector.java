@@ -1,6 +1,8 @@
 package com.brandon3055.draconicevolution.blocks.reactor.tileentity;
 
-import com.brandon3055.brandonscore.api.power.IOPStorage;
+import com.brandon3055.draconicevolution.lib.TransactionalOPStorage;
+import net.neoforged.neoforge.transfer.TransferPreconditions;
+import net.neoforged.neoforge.transfer.transaction.TransactionContext;
 import com.brandon3055.brandonscore.capability.CapabilityOP;
 import com.brandon3055.draconicevolution.init.DEContent;
 import net.minecraft.core.BlockPos;
@@ -23,8 +25,8 @@ public class TileReactorInjector extends TileReactorComponent {
         com.brandon3055.brandonscore.capability.CapabilityOP.registerBlockEntity(event, DEContent.TILE_REACTOR_INJECTOR.get());
     }
 
-    private static class OPInjector implements IOPStorage {
-        private TileReactorInjector tile;
+    private static class OPInjector implements TransactionalOPStorage {
+        private final TileReactorInjector tile;
 
         public OPInjector(TileReactorInjector tile) {
             this.tile = tile;
@@ -32,15 +34,20 @@ public class TileReactorInjector extends TileReactorComponent {
 
         @Override
         public long receiveOP(long maxReceive, boolean simulate) {
-            if (simulate) {
-                return maxReceive;
-            }
-
             TileReactorCore core = tile.getCachedCore();
+            return core == null ? 0 : core.injectEnergy(maxReceive, simulate, null);
+        }
 
-            if (core != null) {
-                return core.injectEnergy(maxReceive);
-            }
+        @Override
+        public int insert(int amount, TransactionContext transaction) {
+            TransferPreconditions.checkNonNegative(amount);
+            TileReactorCore core = tile.getCachedCore();
+            return core == null ? 0 : (int) core.injectEnergy(amount, false, transaction);
+        }
+
+        @Override
+        public int extract(int amount, TransactionContext transaction) {
+            TransferPreconditions.checkNonNegative(amount);
             return 0;
         }
 

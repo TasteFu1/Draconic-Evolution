@@ -64,9 +64,7 @@ import net.minecraft.world.entity.player.Player;
 
 import net.minecraft.world.item.ItemStack;
 
-import net.neoforged.api.distmarker.Dist;
 
-import net.neoforged.api.distmarker.OnlyIn;
 
 import net.neoforged.fml.util.thread.EffectiveSide;
 
@@ -211,12 +209,9 @@ public class UndyingEntity extends ModuleEntity<UndyingData> {
             }
             if (module.getModuleTechLevel().index >= 2) {
                 entity.clearFire();
-                Iterator<MobEffectInstance> iterator = entity.getActiveEffectsMap().values().iterator();
-                while (iterator.hasNext()) {
-                    MobEffectInstance effect = iterator.next();
+                for (MobEffectInstance effect : java.util.List.copyOf(entity.getActiveEffects())) {
                     if (!effect.getEffect().value().isBeneficial()) {
-                        entity.onEffectRemoved(effect);
-                        iterator.remove();
+                        entity.removeEffect(effect.getEffect());
                     }
                 }
             }
@@ -231,7 +226,6 @@ public class UndyingEntity extends ModuleEntity<UndyingData> {
     }
 
     @Override
-    @OnlyIn(Dist.CLIENT)
     public void renderModule(GuiElement<?> parent, GuiRender render, int x, int y, int width, int height, double mouseX, double mouseY, boolean renderStack, float partialTicks) {
         super.renderModule(parent, render, x, y, width, height, mouseX, mouseY, renderStack, partialTicks);
 

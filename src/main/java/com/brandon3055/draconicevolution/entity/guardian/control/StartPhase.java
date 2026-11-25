@@ -11,6 +11,7 @@ import net.minecraft.core.Vec3i;
 import net.minecraft.util.random.WeightedList; // port-26.1.2: SimpleWeightedRandomList -> WeightedList
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.ai.targeting.TargetingConditions;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.Vec3;
@@ -28,7 +29,7 @@ import java.util.List;
  */
 public class StartPhase extends Phase {
     private static final Logger LOGGER = DraconicEvolution.LOGGER;
-    public static final TargetingConditions AGRO_TARGETS = TargetingConditions.forCombat().ignoreLineOfSight().range(300).selector(e -> e instanceof Player && e instanceof LivingEntity);
+    public static final TargetingConditions AGRO_TARGETS = TargetingConditions.forCombat().ignoreLineOfSight().range(300).selector((e, level) -> e instanceof Player);
     private Path currentPath;
     private Vec3 targetLocation;
     private boolean clockwise;
@@ -146,7 +147,7 @@ public class StartPhase extends Phase {
         List<Player> targetOptions = guardian.level().players()
                 .stream()
                 .filter(e -> e.distanceToSqr(focus) <= 200 * 200)
-                .filter(e -> AGRO_TARGETS.test(guardian, e))
+                .filter(e -> AGRO_TARGETS.test((net.minecraft.server.level.ServerLevel) guardian.level(), guardian, e))
                 .map(e -> (Player) e)
                 .toList();
 

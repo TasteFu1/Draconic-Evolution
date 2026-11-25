@@ -1,147 +1,162 @@
-// port-26.1.2: gradle-layer rewrite по эталону evolved-mekanism-26.1.2 (moddev 2.0.143, ловушки 14/26/35/36)
-
 plugins {
     id 'java-library'
-    id 'net.neoforged.moddev' version '2.0.143' // port-26.1.2: fleet version (trap 14)
+    id 'net.neoforged.moddev' version '2.0.141'
 }
 
-group = "com.brandon3055.draconicevolution"
-base {
-    archivesName = 'Draconic-Evolution'
+group = mod_group_id
+version = "${mc_version}-${mod_version}-${port_version}"
+base.archivesName = 'Draconic-Evolution'
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
+
+// The bootstrapper uses the same root for dependency checkouts, builds and run directories.
+def stage = file(providers.environmentVariable('DE_BUILD_ROOT').getOrElse('.gradle/port-work'))
+layout.buildDirectory = new File(stage, 'Draconic-Evolution/build')
+def dependencyDir = new File(stage, 'deps')
+def coreJar = new File(dependencyDir, "BrandonsCore-${bcore_version}.jar")
+def cclJar = new File(dependencyDir, "codechickenlib-${ccl_version}.jar")
+
+sourceSets.main.resources.srcDir 'src/main/generated'
+sourceSets.main.java {
+    // These 1.21 authoring tools and the unused prototype renderer are retained for reference.
+    exclude 'com/brandon3055/draconicevolution/datagen/**'
+    exclude 'com/brandon3055/draconicevolution/client/TestRenderLayer.java'
 }
-version = "${mc_version}-${mod_version}-port.1"
-
-sourceSets.main.resources.srcDirs += "src/main/generated"
-
-java.toolchain.languageVersion = JavaLanguageVersion.of(25) // port-26.1.2: Java 25
 
 neoForge {
     version = project.neo_version
-
-    accessTransformers = project.files("src/main/resources/META-INF/accesstransformer.cfg")
-
+    accessTransformers = project.files('src/main/resources/META-INF/accesstransformer.cfg')
     runs {
-        client {
-            client()
-        }
+        client { client() }
         server {
             server()
-            gameDirectory = project.file('run/server') // port-26.1.2: QA RUNDIR (skill mc-fleet-build-qa)
             programArgument '--nogui'
         }
-        // port-26.1.2: run-type "data" has been removed (trap 66) -> serverData/clientData
-        serverData {
-            serverData()
-            gameDirectory = project.file('run/data')
-            programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/main/generated').absolutePath, '--existing', file('src/main/resources').absolutePath
-        }
-        clientData {
-            clientData()
-            gameDirectory = project.file('run/data')
+        serverData { serverData() }
+        clientData { clientData() }
+        configureEach {
+            gameDirectory = new File(stage, "run/${name}")
+            if (name.endsWith('Data')) {
+                programArguments.addAll '--mod', project.mod_id, '--all',
+                        '--output', file('src/main/generated').absolutePath,
+                        '--existing', file('src/main/resources').absolutePath
+            }
         }
     }
-
-    // port-26.1.2: without the mods section, the mod is silently NOT included in the run (trap 26)
     mods {
-        "${mod_id}" {
-            sourceSet sourceSets.main
-        }
+        "${mod_id}" { sourceSet sourceSets.main }
     }
-}
-
-// EnderCollection uses an optional boundary to the actual installed EnderStorage API.
-sourceSets {
-    main {
-        java {
-            // port-26.1.2: datagen-кластер исключён до этапа datagen (ExistingFileHelper/модельные генераторы 26) — см. stage1/2 отчёт
-            exclude 'com/brandon3055/draconicevolution/datagen/**'
-            // port-26.1.2: TestRenderLayer — тестовый класс, не используется, RenderLayer API 26 несовместима
-            exclude 'com/brandon3055/draconicevolution/client/TestRenderLayer.java'
-        }
+    unitTest {
+        enable()
+        testedMod = mods.named(mod_id)
     }
 }
 
 repositories {
-    mavenLocal() // port-26.1.2: EMI 26.1.2
-
-    maven { url = "https://chickenbones.net/maven" }
-    maven {
-        url = "https://maven.theillusivec4.top/"
-        content { includeGroup "top.theillusivec4.curios" }
+    def mirror = new File(stage, 'mirror')
+    if (mirror.isDirectory()) {
+        maven {
+            url = mirror.toURI()
+            metadataSources { mavenPom(); ignoreGradleMetadataRedirection() }
+            content { includeGroup 'cc.tweaked'; includeGroup 'top.theillusivec4.curios' }
+        }
+    }
+    def central = mavenCentral()
+    exclusiveContent {
+        forRepositories(central)
+        filter {
+            includeGroupByRegex 'org[.]junit([.].*)?'
+            includeGroup 'org.opentest4j'
+            includeGroup 'org.apiguardian'
+        }
     }
     maven {
-        url = "https://maven.squiddev.cc/"
-        content { includeGroup "cc.tweaked" }
+        url = uri('https://maven.covers1624.net/')
+        content { includeGroup 'net.covers1624' }
+    }
+    maven {
+        url = uri('https://maven.theillusivec4.top/')
+        content { includeGroup 'top.theillusivec4.curios' }
+    }
+    maven {
+        url = uri('https://maven.squiddev.cc/')
+        content { includeGroup 'cc.tweaked' }
+    }
+    maven {
+        url = uri('https://api.modrinth.com/maven')
+        content { includeGroup 'maven.modrinth' }
     }
 }
 
 dependencies {
-    // port-26.1.2: fleet jars (CCL port.2 is NOT in mavenLocal - direct fileTree, same as in BrandonsCore build.gradle)
-    implementation files('../../mi-stack/BrandonsCore/build/libs/BrandonsCore-' + bcore_version + '.jar')
-    implementation files('../../mi-stack/CodeChickenLib/build/libs/codechickenlib-' + ccl_version + '.jar')
-    // port-26.1.2: Quack (mavenLocal 0.4.10.130) - использовался DE напрямую (SneakyUtils/CrashLock/FastStream)
-    implementation 'net.covers1624:Quack:0.4.10.130'
+    implementation files(coreJar, cclJar)
+    // CodeChickenLib embeds Quack for installed users. Supply it explicitly to javac.
+    compileOnly 'net.covers1624:Quack:0.4.10.130'
 
-    // port-26.1.2: owner-authorized fleet EnderStorage; optional integration remains lazy.
-    implementation files('../../ender-stack/EnderStorage/build/libs/EnderStorage-2.13.0+26.1.2-port.1.jar')
-
-    compileOnly "dev.emi:emi-neoforge:${emi_version}:api"
-    runtimeOnly "dev.emi:emi-neoforge:${emi_version}"
-
+    compileOnly "maven.modrinth:pf-emi:${emi_version}"
     compileOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}:api"
-    runtimeOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}"
-
     compileOnly "cc.tweaked:cc-tweaked-${mc_version}-forge-api:${cct_version}"
-
-    // port-26.1.2: legacy recipe-viewer integration removed; fleet uses EMI
-
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+    if (providers.gradleProperty('withOptionalMods').isPresent()) {
+        runtimeOnly "maven.modrinth:pf-emi:${emi_version}"
+        runtimeOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}"
+    }
+    // EnderCollection discovers the optional EnderStorage API reflectively.
+    if (providers.gradleProperty('enderStorageJar').isPresent()) {
+        runtimeOnly files(providers.gradleProperty('enderStorageJar').get())
+    }
+    testImplementation platform('org.junit:junit-bom:5.12.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
-test {
+sourceSets.test.compileClasspath += sourceSets.main.output
+
+def testGameDir = new File(stage, 'run/junit')
+tasks.named('prepareNeoForgeTestFiles') {
+    gameDirectory = testGameDir
+}
+tasks.named('test') {
     useJUnitPlatform()
 }
-
-var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
-    var replaceProperties = [
-            mc_version             : mc_version,
-            minecraft_version_range: minecraft_version_range,
-            neo_version            : neo_version,
-            neo_version_range      : neo_version_range,
-            loader_version_range   : loader_version_range,
-            mod_id                 : mod_id,
-            mod_name               : mod_name,
-            mod_license            : mod_license,
-            mod_version            : mod_version,
-            mod_authors            : mod_authors,
-            mod_description        : mod_description,
-    ]
-    inputs.properties replaceProperties
-    expand replaceProperties
-    from "src/main/templates"
-    into "build/generated/sources/modMetadata"
+// ModDev sets this after project evaluation. Keep its launch arguments and working directory in sync.
+afterEvaluate {
+    tasks.named('test') { workingDir = testGameDir }
 }
 
+def metadata = [
+        minecraft_version_range: minecraft_version_range, neo_version_range: neo_version_range,
+        loader_version_range: loader_version_range, mod_id: mod_id, mod_name: mod_name,
+        mod_license: mod_license, mod_version: "${mod_version}-${port_version}",
+        mod_authors: mod_authors, mod_description: mod_description
+]
+def generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
+    inputs.properties metadata
+    expand metadata
+    from 'src/main/templates'
+    into layout.buildDirectory.dir('generated/sources/modMetadata')
+}
 sourceSets.main.resources.srcDir generateModMetadata
-
 neoForge.ideSyncTask generateModMetadata
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
-    options.compilerArgs += ['-Xmaxerrs', '10000'] // port-26.1.2: remove the default limit of 100 (trap 69)
+    options.compilerArgs.addAll(['-Xmaxerrs', '10000'])
 }
-
-jar {
-    manifest {
-        attributes 'Specification-Title': base.archivesName.get()
-        attributes 'Specification-Vendor': 'brandon3055'
-        attributes 'Specification-Version': "1"
-        attributes 'Implementation-Title': base.archivesName.get()
-        attributes 'Implementation-Vendor': 'brandon3055'
-        attributes 'Implementation-Version': version
-        attributes 'MixinConfigs': 'mixins.draconicevolution.json'
+tasks.named('compileJava') {
+    doFirst {
+        [coreJar, cclJar].each { dependency ->
+            if (!dependency.isFile()) {
+                throw new GradleException("Missing ${dependency.name}. Run python gradle/build-port.py build to prepare the pinned dependencies.")
+            }
+        }
     }
 }
 
-// port-26.1.2: signing/publishing/publishMods removed - not needed for the port
+tasks.named('jar') {
+    from 'LICENSE.md'
+    manifest {
+        attributes 'Implementation-Title': 'Draconic Evolution',
+                'Implementation-Version': project.version,
+                'Implementation-Vendor': 'brandon3055 and contributors',
+                'MixinConfigs': 'mixins.draconicevolution.json'
+    }
+}

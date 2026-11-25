@@ -68,7 +68,7 @@ public interface IHarvestHandler {
         FluidState fluidState = level.getFluidState(pos);
         Block block = state.getBlock();
 
-        BlockEvent.BreakEvent event = CommonHooks.fireBlockBreak(level, ((ServerPlayer) player).gameMode.getGameModeForPlayer(), (ServerPlayer) player, pos, state);
+        net.neoforged.neoforge.event.level.block.BreakBlockEvent event = CommonHooks.fireBlockBreak(level, ((ServerPlayer) player).gameMode.getGameModeForPlayer(), (ServerPlayer) player, pos, state);
         if (event.isCanceled()) {
             ServerPlayer mpPlayer = (ServerPlayer) player;
             mpPlayer.connection.send(new ClientboundBlockUpdatePacket(level, pos));
@@ -76,7 +76,7 @@ public interface IHarvestHandler {
         }
 
         if (player.getAbilities().instabuild) {
-            if (block.onDestroyedByPlayer(state, level, pos, player, false, fluidState)) {
+            if (block.onDestroyedByPlayer(state, level, pos, player, stack, false, fluidState)) {
                 block.destroy(level, pos, state);
             }
 
@@ -85,7 +85,7 @@ public interface IHarvestHandler {
         }
 
         stack.mineBlock(level, state, pos, player);
-        BlockToStackHelper.breakAndCollectWithPlayer(level, pos, stackCollector, player);
+        BlockToStackHelper.breakAndCollectWithPlayer(level, pos, stackCollector, player, 0);
         storage.modifyEnergyStored(-EquipCfg.energyHarvest);
     }
 }

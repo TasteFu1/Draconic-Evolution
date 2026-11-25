@@ -2,7 +2,7 @@ package com.brandon3055.draconicevolution.blocks.tileentity;
 
 import codechicken.lib.data.MCDataInput;
 import com.brandon3055.brandonscore.blocks.TileBCore;
-import com.brandon3055.brandonscore.inventory.TileItemStackHandler;
+import com.brandon3055.draconicevolution.inventory.ManagedItemHandler;
 import com.brandon3055.brandonscore.lib.IInteractTile;
 import com.brandon3055.draconicevolution.DEOldConfig;
 import com.brandon3055.draconicevolution.DraconicEvolution;
@@ -48,17 +48,23 @@ import javax.annotation.Nullable;
  */
 public class TileDisenchanter extends TileBCore implements MenuProvider, IInteractTile {
 
-    public TileItemStackHandler itemHandler = new TileItemStackHandler(this, 3)
-            .setSlotValidator(0, stack -> stack.isEnchanted() && ModHelper.canRemoveEnchants(stack))
-            .setSlotValidator(1, itemStack -> itemStack.is(Items.BOOK));
+    public ManagedItemHandler itemHandler = new ManagedItemHandler(this, 3);
 
     public TileDisenchanter(BlockPos pos, BlockState state) {
         super(DEContent.TILE_DISENCHANTER.get(), pos, state);
-        capManager.setManaged("inventory", Capabilities.Item.BLOCK, itemHandler).saveBoth();
+        itemHandler.setSlotValidator(0, stack -> stack.isEnchanted() && ModHelper.canRemoveEnchants(stack));
+        itemHandler.setSlotValidator(1, stack -> stack.is(Items.BOOK));
+        capManager.setInternalManaged("inventory", Capabilities.Item.BLOCK, itemHandler).saveBoth();
+    }
+
+    @Override
+    public void setLevel(net.minecraft.world.level.Level level) {
+        super.setLevel(level);
+        itemHandler.loadPending();
     }
 
     public static void register(RegisterCapabilitiesEvent event) {
-        capability(event, DEContent.TILE_DISENCHANTER, Capabilities.Item.BLOCK);
+        event.registerBlockEntity(Capabilities.Item.BLOCK, DEContent.TILE_DISENCHANTER.get(), (tile, side) -> tile.itemHandler.automation);
     }
 
     @Override

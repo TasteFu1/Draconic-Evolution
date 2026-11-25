@@ -49,17 +49,17 @@ public class TilePortal extends TileBCore {
         return controller != null && controller.isActive();
     }
 
-    // Client Stiff
-
     @Override
-    @OnlyIn (Dist.CLIENT)
     public void tick() {
+        if (level == null || !level.isClientSide()) {
+            super.tick();
+            return;
+        }
         if (hidden && player != null) {
             BlockState state = getBlockState();
             if (!state.is(DEContent.PORTAL.get())) {
                 hidden = false;
                 player = null;
-                level.setBlock(getBlockPos(), state.setValue(Portal.VISIBLE, true), 0, 0);
                 return;
             }
             Direction.Axis axis = state.getValue(Portal.AXIS);
@@ -72,34 +72,41 @@ public class TilePortal extends TileBCore {
             }
             return;
         }
-        Minecraft mc = Minecraft.getInstance();
-        Player player = mc.player;
+        ClientEffects.spawn(this);
+    }
 
-        double distanceMod = Utils.getDistance(worldPosition.getX() + 0.5, worldPosition.getY() + 0.5, worldPosition.getZ() + 0.5, player.getX(), player.getY(), player.getZ());
-        if (level.getRandom().nextInt(Math.max((int) (distanceMod * (distanceMod / 5D)), 1)) == 0) {
-            BlockState state = level.getBlockState(worldPosition);
-            if (!state.is(DEContent.PORTAL.get())) {
-                return;
-            }
-            Direction.Axis axis = state.getValue(Portal.AXIS);
+    private static final class ClientEffects {
+        private static void spawn(TilePortal tile) {
+            Minecraft mc = Minecraft.getInstance();
+            Player player = mc.player;
+            if (player == null) return;
 
-            double rD1 = level.getRandom().nextDouble();
-            double rD2 = level.getRandom().nextDouble();
-            double rO1 = -0.1 + level.getRandom().nextDouble() * 0.2;
-            double rO2 = -0.1 + level.getRandom().nextDouble() * 0.2;
+            double distanceMod = Utils.getDistance(tile.getBlockPos().getX() + 0.5, tile.getBlockPos().getY() + 0.5, tile.getBlockPos().getZ() + 0.5, player.getX(), player.getY(), player.getZ());
+            if (tile.getLevel().getRandom().nextInt(Math.max((int) (distanceMod * (distanceMod / 5D)), 1)) == 0) {
+                BlockState state = tile.getLevel().getBlockState(tile.getBlockPos());
+                if (!state.is(DEContent.PORTAL.get())) {
+                    return;
+                }
+                Direction.Axis axis = state.getValue(Portal.AXIS);
 
-            if (axis == Direction.Axis.Z && player.getZ() < worldPosition.getZ() + 0.5) {
-                mc.particleEngine.add(new ParticlePortal((ClientLevel) level, Vector3.fromTile(this).add(rD1, rD2, 0), Vector3.fromTile(this).add(rD1 + rO1, rD2 + rO2, 0.75)));
-            } else if (axis == Direction.Axis.Z && player.getZ() > worldPosition.getZ() + 0.5) {
-                mc.particleEngine.add(new ParticlePortal((ClientLevel) level, Vector3.fromTile(this).add(rD1, rD2, 1), Vector3.fromTile(this).add(rD1 + rO1, rD2 + rO2, 0.25)));
-            } else if (axis == Direction.Axis.X && player.getX() < worldPosition.getX() + 0.5) {
-                mc.particleEngine.add(new ParticlePortal((ClientLevel) level, Vector3.fromTile(this).add(0, rD1, rD2), Vector3.fromTile(this).add(0.75, rD1 + rO1, rD2 + rO2)));
-            } else if (axis == Direction.Axis.X && player.getX() > worldPosition.getX() + 0.5) {
-                mc.particleEngine.add(new ParticlePortal((ClientLevel) level, Vector3.fromTile(this).add(1, rD1, rD2), Vector3.fromTile(this).add(0.25, rD1 + rO1, rD2 + rO2)));
-            } else if (axis == Direction.Axis.Y && player.getY() + player.getEyeHeight() > worldPosition.getY() + 0.5) {
-                mc.particleEngine.add(new ParticlePortal((ClientLevel) level, Vector3.fromTile(this).add(rD1, 1, rD2), Vector3.fromTile(this).add(rD1 + rO1, 0.25, rD2 + rO2)));
-            } else if (axis == Direction.Axis.Y && player.getY() + player.getEyeHeight() < worldPosition.getY() + 0.5) {
-                mc.particleEngine.add(new ParticlePortal((ClientLevel) level, Vector3.fromTile(this).add(rD1, 0, rD2), Vector3.fromTile(this).add(rD1 + rO1, 0.75, rD2 + rO2)));
+                double rD1 = tile.getLevel().getRandom().nextDouble();
+                double rD2 = tile.getLevel().getRandom().nextDouble();
+                double rO1 = -0.1 + tile.getLevel().getRandom().nextDouble() * 0.2;
+                double rO2 = -0.1 + tile.getLevel().getRandom().nextDouble() * 0.2;
+
+                if (axis == Direction.Axis.Z && player.getZ() < tile.getBlockPos().getZ() + 0.5) {
+                    mc.particleEngine.add(new ParticlePortal((ClientLevel) tile.getLevel(), Vector3.fromTile(tile).add(rD1, rD2, 0), Vector3.fromTile(tile).add(rD1 + rO1, rD2 + rO2, 0.75)));
+                } else if (axis == Direction.Axis.Z && player.getZ() > tile.getBlockPos().getZ() + 0.5) {
+                    mc.particleEngine.add(new ParticlePortal((ClientLevel) tile.getLevel(), Vector3.fromTile(tile).add(rD1, rD2, 1), Vector3.fromTile(tile).add(rD1 + rO1, rD2 + rO2, 0.25)));
+                } else if (axis == Direction.Axis.X && player.getX() < tile.getBlockPos().getX() + 0.5) {
+                    mc.particleEngine.add(new ParticlePortal((ClientLevel) tile.getLevel(), Vector3.fromTile(tile).add(0, rD1, rD2), Vector3.fromTile(tile).add(0.75, rD1 + rO1, rD2 + rO2)));
+                } else if (axis == Direction.Axis.X && player.getX() > tile.getBlockPos().getX() + 0.5) {
+                    mc.particleEngine.add(new ParticlePortal((ClientLevel) tile.getLevel(), Vector3.fromTile(tile).add(1, rD1, rD2), Vector3.fromTile(tile).add(0.25, rD1 + rO1, rD2 + rO2)));
+                } else if (axis == Direction.Axis.Y && player.getY() + player.getEyeHeight() > tile.getBlockPos().getY() + 0.5) {
+                    mc.particleEngine.add(new ParticlePortal((ClientLevel) tile.getLevel(), Vector3.fromTile(tile).add(rD1, 1, rD2), Vector3.fromTile(tile).add(rD1 + rO1, 0.25, rD2 + rO2)));
+                } else if (axis == Direction.Axis.Y && player.getY() + player.getEyeHeight() < tile.getBlockPos().getY() + 0.5) {
+                    mc.particleEngine.add(new ParticlePortal((ClientLevel) tile.getLevel(), Vector3.fromTile(tile).add(rD1, 0, rD2), Vector3.fromTile(tile).add(rD1 + rO1, 0.75, rD2 + rO2)));
+                }
             }
         }
     }

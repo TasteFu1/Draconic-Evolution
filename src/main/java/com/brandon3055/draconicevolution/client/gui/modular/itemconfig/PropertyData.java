@@ -54,7 +54,9 @@ import net.minecraft.network.chat.Component;
 
 import net.minecraft.network.chat.contents.TranslatableContents;
 
-import org.apache.commons.lang3.NotImplementedException;
+import com.google.gson.JsonParser;
+import com.mojang.serialization.JsonOps;
+import net.minecraft.network.chat.ComponentSerialization;
 
 
 
@@ -214,7 +216,7 @@ public class PropertyData {
     }
 
     public void updateEnumValue(int newIndex) {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException("Enum properties are unsupported");
 //        if (type == Type.ENUM && enumValueOptions.contains(newIndex)) {
 //            enumValueIndex = newIndex;
 //            updateDisplayValue();
@@ -297,7 +299,7 @@ public class PropertyData {
             case BOOLEAN -> prop instanceof BooleanProperty && ((BooleanProperty) prop).getValue() == booleanValue;
             case INTEGER -> prop instanceof IntegerProperty && ((IntegerProperty) prop).getValue() == integerValue;
             case DECIMAL -> prop instanceof DecimalProperty && ((DecimalProperty) prop).getValue() == decimalValue;
-//            case ENUM -> throw new NotImplementedException();//prop instanceof EnumProperty && ((EnumProperty<?>) prop).getValue().ordinal() == enumValueIndex;
+//            case ENUM -> throw new UnsupportedOperationException("Enum properties are unsupported");//prop instanceof EnumProperty && ((EnumProperty<?>) prop).getValue().ordinal() == enumValueIndex;
         };
     }
 
@@ -347,9 +349,9 @@ public class PropertyData {
         }
 
         if (toolTip != null) {
-            nbt.putString("tooltip", Component.Serializer.toJson(toolTip, provider));
+            nbt.putString("tooltip", ComponentSerialization.CODEC.encodeStart(provider.createSerializationContext(JsonOps.INSTANCE), toolTip).getOrThrow().toString());
         }
-        nbt.putString("display_name", Component.Serializer.toJson(displayName, provider));
+        nbt.putString("display_name", ComponentSerialization.CODEC.encodeStart(provider.createSerializationContext(JsonOps.INSTANCE), displayName).getOrThrow().toString());
         nbt.putString("display_value", displayValue);
         nbt.putBoolean("global", isGlobal);
         switch (type) {
@@ -384,6 +386,15 @@ public class PropertyData {
         return nbt;
     }
 
+    private static Component readComponent(String text, HolderLookup.Provider provider) {
+        try {
+            return ComponentSerialization.CODEC.parse(provider.createSerializationContext(JsonOps.INSTANCE), JsonParser.parseString(text))
+                    .result().orElseGet(() -> Component.literal(text));
+        } catch (JsonParseException ex) {
+            return Component.literal(text);
+        }
+    }
+
     @Nullable
     public static PropertyData deserialize(CompoundTag nbt, HolderLookup.Provider provider) {
         if (!TagUtils26.hasUUID(nbt, "prov_id") || !nbt.contains("prov_name") || (!nbt.contains("prop_name") && !TagUtils26.hasUUID(nbt, "prop_name")) || !nbt.contains("type")) {
@@ -392,7 +403,7 @@ public class PropertyData {
 
         PropertyData data = new PropertyData(
                 TagUtils26.getUUID(nbt, "prov_id"),
-                nbt.getString("prov_name"),
+                nbt.getStringOr("prov_name", ""),
                 Type.getSafe(nbt.getByteOr("type", (byte)0)));
 
         if (TagUtils26.hasUUID(nbt, "prop_name")) {
@@ -402,17 +413,9 @@ public class PropertyData {
         }
 
         if (nbt.contains("tooltip")) {
-            try {
-                data.toolTip = Component.Serializer.fromJsonLenient(nbt.getString("tooltip"), provider);
-            } catch (JsonParseException ignored) {
-                data.toolTip = Component.literal(nbt.getStringOr("tooltip", ""));
-            }
+            data.toolTip = readComponent(nbt.getStringOr("tooltip", ""), provider);
         }
-        try {
-            data.displayName = Component.Serializer.fromJsonLenient(nbt.getString("display_name"), provider);
-        }catch (JsonParseException ignored) {
-            data.displayName = Component.literal(nbt.getStringOr("display_name", ""));
-        }
+        data.displayName = readComponent(nbt.getStringOr("display_name", ""), provider);
 
         data.displayValue = nbt.getStringOr("display_value", "");
         data.isGlobal = nbt.getBooleanOr("global", false);

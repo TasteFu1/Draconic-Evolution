@@ -307,9 +307,9 @@ public class ModularArmorEventHandler {
                 getUndyingEntities(stacks.get(i), undyingModules, player.getInventory().getSelectedSlot() == i ? EquipmentSlot.MAINHAND : null, false, entity.registryAccess());
             }
             for (EquipmentSlot slot : ARMOR_SLOTS) {
-                getUndyingEntities(player.getInventory().armor.get(slot.getIndex()), undyingModules, slot, false, entity.registryAccess());
+                getUndyingEntities(player.getItemBySlot(slot), undyingModules, slot, false, entity.registryAccess());
             }
-            for (ItemStack stack : player.getInventory().offhand) {
+            for (ItemStack stack : java.util.List.of(player.getOffhandItem())) {
                 getUndyingEntities(stack, undyingModules, EquipmentSlot.OFFHAND, false, entity.registryAccess());
             }
             for (ItemStack stack : EquipmentManager.getAllItems(entity)) {
@@ -361,9 +361,9 @@ public class ModularArmorEventHandler {
                 tryTickStack(stacks.get(i), player, player.getInventory().getSelectedSlot() == i ? EquipmentSlot.MAINHAND : null, armorAbilities, false);
             }
             for (EquipmentSlot slot : ARMOR_SLOTS) {
-                tryTickStack(player.getInventory().armor.get(slot.getIndex()), player, slot, armorAbilities, false);
+                tryTickStack(player.getItemBySlot(slot), player, slot, armorAbilities, false);
             }
-            for (ItemStack stack : player.getInventory().offhand) {
+            for (ItemStack stack : java.util.List.of(player.getOffhandItem())) {
                 tryTickStack(stack, player, EquipmentSlot.OFFHAND, armorAbilities, false);
             }
             if (EquipmentManager.equipModLoaded()) {
@@ -535,7 +535,7 @@ public class ModularArmorEventHandler {
         }
     }
 
-    private static void blockBreakEvent(BlockEvent.BreakEvent event) {
+    private static void blockBreakEvent(net.neoforged.neoforge.event.level.block.BreakBlockEvent event) {
         ItemStack stack = event.getPlayer().getMainHandItem();
         if (event.isCanceled() || !(stack.getItem() instanceof IModularMiningTool miningTool)) {
             return;

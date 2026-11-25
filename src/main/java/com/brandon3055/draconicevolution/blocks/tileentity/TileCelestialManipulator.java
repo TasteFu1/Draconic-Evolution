@@ -135,7 +135,7 @@ public class TileCelestialManipulator extends TileBCore implements IChangeListen
         if (weatherToggleRunning.get()) {
             timer++;
             if (level.isClientSide()) {
-                updateWeatherEffects();
+                clientEffects().updateWeatherEffects();
             } else {
                 if (timer >= 230) {
                     timer = 0;
@@ -151,7 +151,7 @@ public class TileCelestialManipulator extends TileBCore implements IChangeListen
         } else if (timeWarpRunning.get()) {
             timer++;
             if (level.isClientSide()) {
-                updateSunEffect();
+                clientEffects().updateSunEffect();
             }
             if (timer > 100) {
                 if (opStorage.getEnergyStored() > 320) {
@@ -182,20 +182,14 @@ public class TileCelestialManipulator extends TileBCore implements IChangeListen
             }
 
             if (level.isClientSide() && timer >= 0) {
-                updateSunEffect();
+                clientEffects().updateSunEffect();
             } else if (level.isClientSide()) {
-                if (effects != null) {
-                    effects.clear();
-                }
-                if (sound != null) {
-                    sound.kill();
-                    sound = null;
-                }
+                if (clientEffects != null) clientEffects.stop();
             }
         } else if (active.get()) {
             active.set(false);
         } else if (level.isClientSide()) {
-            standbyParticleEffect();
+            clientEffects().standbyParticleEffect();
         }
     }
 
@@ -336,315 +330,331 @@ public class TileCelestialManipulator extends TileBCore implements IChangeListen
 
     //endregion
 
-    @OnlyIn (Dist.CLIENT)
-    private CelestialModifierSound sound;
+    private ClientEffects clientEffects;
 
-    //region Weather Effect
-
-    private List<EffectTrackerCelestialManipulator> effects;
-
-    public void startWeatherEffect() {
-        timer = 0;
-
-        effects = new LinkedList<>();
-        for (int i = 0; i < 8; i++) {
-            effects.add(new EffectTrackerCelestialManipulator(level, Vec3D.getCenter(worldPosition).add(0, 1.5, 0), Vec3D.getCenter(worldPosition).add(0, 1.5, 0)));
-        }
-
-        Vec3D vec = Vec3D.getCenter(worldPosition.offset(0, 1, 0));
-        sound = new CelestialModifierSound(DESounds.ELECTRIC_BUZZ.get(), worldPosition, level.getRandom());
-        sound.updateSound(vec, 0.01F, 0.5F);
-        Minecraft.getInstance().getSoundManager().play(sound);
-        level.playLocalSound(vec.x, vec.y, vec.z, DESounds.FUSION_COMPLETE.get(), SoundSource.BLOCKS, getSoundVolume(), 0.5F, false);
+    public ClientEffects clientEffects() {
+        if (clientEffects == null) clientEffects = new ClientEffects();
+        return clientEffects;
     }
 
-    public void updateWeatherEffects() {
-        if (effects == null || effects.size() < 8 || sound == null) {
-            startWeatherEffect();
-            return;
-        }
-
-        double riseEnd = 20;
-        double expandStart = 60;
-        double expandEnd = 100;
-        double ascendStart = 140;
-        double ascendStop = 200;
-        double ascendHeight = 500;
-
-        double height = (Math.min(riseEnd, timer) / riseEnd) * 3D;
-        double expansion = timer > expandStart ? ((Math.min(expandEnd, timer) - expandStart) / (expandEnd - expandStart)) : 0D;
-        double secondaryExpand = 0;
-
-        double ascPos = 0;
-
-        if (timer > ascendStart) {
-            ascPos = (timer - ascendStart) / (ascendStop - ascendStart);
-            height += ascPos * (ascendHeight * ascPos);
-            secondaryExpand = ascPos * ascPos * 100D;
-        }
-
-        Vec3D effectFocus = Vec3D.getCenter(worldPosition).add(0, height, 0);
-
-
-//        if (timer < )
-
-
-        double scaleTime = (timer - expandStart) / (ascendStart - expandStart);
-        if (timer > expandStart && timer < ascendStart) {
-            for (int i = 0; i < 10; i++) {
-                Direction dir = Direction.values()[2 + level.getRandom().nextInt(4)];
-                IntParticleData data = new IntParticleData(DEParticles.SPARK.get(),
-                        0, //R
-                        127,  //G
-                        255,  //B
-                        (int) (1F * (level.getRandom().nextFloat() + 0.1) * 100), //Scale
-                        (int) (5D * scaleTime * 100), //Spark scale
-                        10, 0, //Max Age, Additional random age
-                        (int) (0), //Gravity
-                        (int) (1F * 1000), //Friction
-                        1 //Set velocity direct
-                );
-                double speed = 0.3 / 10;
-                Vector3 pos = Vector3.fromTileCenter(this).add(dir.getStepX() * -0.3, 0, dir.getStepZ() * -0.3);
-                level.addParticle(data, pos.x, pos.y, pos.z, speed * dir.getStepX(), 0, speed * dir.getStepZ());
+    public final class ClientEffects {
+        private void stop() {
+            if (effects != null) effects.clear();
+            if (sound != null) {
+                sound.kill();
+                sound = null;
             }
         }
 
-        if (timer == ascendStart) {
-            for (int i = 0; i < 100; i++) {
-                IntParticleData data = new IntParticleData(DEParticles.SPARK.get(),
-                        0, //R
-                        127,  //G
-                        255,  //B
-                        (int) (5F * (level.getRandom().nextFloat() + 0.1) * 100), //Scale
-                        (int) (100 * 100), //Spark scale
-                        80, 0, //Max Age, Additional random age
-                        (int) (-0.5 * 1000), //Gravity
-                        (int) (1F * 1000) //Friction
-                        //Set velocity direct
-                );
-                Vector3 pos = Vector3.fromTileCenter(this);
-                level.addParticle(data, pos.x, pos.y, pos.z, 0.5 * level.getRandom().nextGaussian(), 0, 0.5 * level.getRandom().nextGaussian());
+        private CelestialModifierSound sound;
+
+        //region Weather Effect
+
+        private List<EffectTrackerCelestialManipulator> effects;
+
+        public void startWeatherEffect() {
+            timer = 0;
+
+            effects = new LinkedList<>();
+            for (int i = 0; i < 8; i++) {
+                effects.add(new EffectTrackerCelestialManipulator(level, Vec3D.getCenter(worldPosition).add(0, 1.5, 0), Vec3D.getCenter(worldPosition).add(0, 1.5, 0)));
             }
+
+            Vec3D vec = Vec3D.getCenter(worldPosition.offset(0, 1, 0));
+            sound = new CelestialModifierSound(DESounds.ELECTRIC_BUZZ.get(), worldPosition, level.getRandom());
+            sound.updateSound(vec, 0.01F, 0.5F);
+            Minecraft.getInstance().getSoundManager().play(sound);
+            level.playLocalSound(vec.x, vec.y, vec.z, DESounds.FUSION_COMPLETE.get(), SoundSource.BLOCKS, getSoundVolume(), 0.5F, false);
         }
 
+        public void updateWeatherEffects() {
+            if (effects == null || effects.size() < 8 || sound == null) {
+                startWeatherEffect();
+                return;
+            }
 
-        if (timer == riseEnd) {
-//            level.playLocalSound(effectFocus.x, effectFocus.y, effectFocus.z, DESounds.fusionComplete, SoundSource.BLOCKS, 1F, 1F, false);
-        } else if (timer == ascendStart) {
-            level.playLocalSound(effectFocus.x, effectFocus.y, effectFocus.z, DESounds.FUSION_COMPLETE.get(), SoundSource.BLOCKS, 1F, 2F, false);
-            for (int i = 0; i < 100; i++) {
-                try {
-                    //                    SubParticle particle = new SubParticle(world, effects.get(world.rand.nextInt(effects.size())).pos);
-                    //                    particle.setScale(2);
-                    //TODO particles
-                    //                    BCEffectHandler.spawnFXDirect(DEParticles.DE_SHEET, particle, 128, true);
-                } catch (Exception e) {
-                    e.printStackTrace();
+            double riseEnd = 20;
+            double expandStart = 60;
+            double expandEnd = 100;
+            double ascendStart = 140;
+            double ascendStop = 200;
+            double ascendHeight = 500;
+
+            double height = (Math.min(riseEnd, timer) / riseEnd) * 3D;
+            double expansion = timer > expandStart ? ((Math.min(expandEnd, timer) - expandStart) / (expandEnd - expandStart)) : 0D;
+            double secondaryExpand = 0;
+
+            double ascPos = 0;
+
+            if (timer > ascendStart) {
+                ascPos = (timer - ascendStart) / (ascendStop - ascendStart);
+                height += ascPos * (ascendHeight * ascPos);
+                secondaryExpand = ascPos * ascPos * 100D;
+            }
+
+            Vec3D effectFocus = Vec3D.getCenter(worldPosition).add(0, height, 0);
+
+
+    //        if (timer < )
+
+
+            double scaleTime = (timer - expandStart) / (ascendStart - expandStart);
+            if (timer > expandStart && timer < ascendStart) {
+                for (int i = 0; i < 10; i++) {
+                    Direction dir = Direction.values()[2 + level.getRandom().nextInt(4)];
+                    IntParticleData data = new IntParticleData(DEParticles.SPARK.get(),
+                            0, //R
+                            127,  //G
+                            255,  //B
+                            (int) (1F * (level.getRandom().nextFloat() + 0.1) * 100), //Scale
+                            (int) (5D * scaleTime * 100), //Spark scale
+                            10, 0, //Max Age, Additional random age
+                            (int) (0), //Gravity
+                            (int) (1F * 1000), //Friction
+                            1 //Set velocity direct
+                    );
+                    double speed = 0.3 / 10;
+                    Vector3 pos = Vector3.fromTileCenter(TileCelestialManipulator.this).add(dir.getStepX() * -0.3, 0, dir.getStepZ() * -0.3);
+                    level.addParticle(data, pos.x, pos.y, pos.z, speed * dir.getStepX(), 0, speed * dir.getStepZ());
                 }
             }
 
-        }
-
-        sound.updateSound(effectFocus.copy().add(0, -(height * 0.8), 0), (float) expansion, (float) expansion + 0.5F);
-
-        for (EffectTrackerCelestialManipulator effect : effects) {
-            effect.onUpdate();
-        }
-
-        double rotation = (double) timer * (expansion * 0.05D);
-        for (EffectTrackerCelestialManipulator effect : effects) {
-            effect.effectFocus = effectFocus;
-            effect.scale = (float) expansion * (1F + (float) (ascPos * 5));
-
-            double indexPos = (double) effects.indexOf(effect) / (double) effects.size();
-            double offset = indexPos * (Math.PI * 2);
-            double offsetX = Math.sin(rotation + offset) * expansion * (3 + secondaryExpand);
-            double offsetZ = Math.cos(rotation + offset) * expansion * (3 + secondaryExpand);
-
-            effect.pos = effectFocus.copy().add(offsetX, 0, offsetZ);
-
-            offset = (indexPos + (1D / (double) effects.size())) * (Math.PI * 2);
-            offsetX = Math.sin(rotation + offset) * expansion * (3 + secondaryExpand);
-            offsetZ = Math.cos(rotation + offset) * expansion * (3 + secondaryExpand);
-            effect.linkPos = effectFocus.copy().add(offsetX, 0, offsetZ);
-        }
-
-        if (timer >= 220) {
-            level.playLocalSound(effectFocus.x, effectFocus.y, effectFocus.z, DESounds.BOOM.get(), SoundSource.BLOCKS, DEOldConfig.disableLoudCelestialManipulator ? 1 : 100, 1F, false);
-            timer = 0;
-            weatherToggleRunning.set(false);
-            effects.clear();
-            sound.kill();
-            sound = null;
-        }
-    }
-
-    //endregion
-
-    //region Sun Effect
-
-    public void startSunEffect() {
-        timeWarpRunning.set(true);
-        timeWarpStopping.set(false);
-        timer = 0;
-
-        effects = new LinkedList<>();
-        for (int i = 0; i < 12; i++) {
-            effects.add(new EffectTrackerCelestialManipulator(level, Vec3D.getCenter(worldPosition).add(0, 1.5, 0), Vec3D.getCenter(worldPosition).add(0, 1.5, 0)));
-        }
-
-        effects.get(0).red = 1F;
-        effects.get(0).green = 0.821F;
-        effects.get(0).blue = 0.174F;
-        effects.get(0).renderBolts = false;
-
-        effects.get(1).red = 1F;
-        effects.get(1).green = 1F;
-        effects.get(1).blue = 1F;
-        effects.get(1).renderBolts = false;
-
-        sound = new CelestialModifierSound(DESounds.SUN_DIAL_EFFECT.get(), worldPosition, level.getRandom());
-        sound.updateSound(Vec3D.getCenter(worldPosition), getSoundVolume(), 0.5F);
-        Minecraft.getInstance().getSoundManager().play(sound);
-    }
-
-    public void stopSunEffect() {
-        timeWarpRunning.set(false);
-        timeWarpStopping.set(true);
-        if (timer > 100) {
-            timer = 100;
-        }
-    }
-
-    public void updateSunEffect() {
-        if (effects == null || effects.size() < 2 || sound == null) {
-            startSunEffect();
-        }
-
-        double depProg = Math.min(timer / 100F, 1D);
-
-        EffectTrackerCelestialManipulator effect;
-        Vec3D focus = Vec3D.getCenter(worldPosition).add(0, 5.5 * depProg, 0);
-        sound.updateSound(focus, (float) depProg, 0.5F + (float) depProg);
-
-//		if (timer % 4 == 0) {
-//			for (int i = 0; i < (timer % 20 <= 10 ? 10 : 2); i++) {
-//				//TODO particles
-//				//                BCEffectHandler.spawnFXDirect(DEParticles.DE_SHEET, new EffectTrackerCelestialManipulator.SubParticle2(world, focus, effects.get(i % 2)), 128, true);
-//			}
-//		}
-
-        IntParticleData data = new IntParticleData(DEParticles.SPARK.get(),
-                255, //R
-                127,  //G
-                0,  //B
-                (int) (1.2F * (level.getRandom().nextFloat() + 0.1) * 100), //Scale
-                (int) (0.5F * 100), //Spark scale
-                30, 10, //Max Age, Additional random age
-                (int) (0) //Gravity
-        );
-        Vector3 pos = Vector3.fromTileCenter(this);
-        level.addParticle(data, pos.x, pos.y, pos.z, 0.002D, 0.04, 0.002D);
-
-        Direction dir = Direction.values()[2 + level.getRandom().nextInt(4)];
-        data = new IntParticleData(DEParticles.SPARK.get(),
-                255, //R
-                127,  //G
-                255,  //B
-                (int) (1F * (level.getRandom().nextFloat() + 0.1) * 100), //Scale
-                (int) (0.5F * 100), //Spark scale
-                10, 0, //Max Age, Additional random age
-                (int) (0), //Gravity
-                (int) (1F * 1000), //Friction
-                1 //Set velocity direct
-        );
-        double speed = 0.3 / 10;
-        pos = Vector3.fromTileCenter(this).add(dir.getStepX() * -0.3, 0, dir.getStepZ() * -0.3);
-        level.addParticle(data, pos.x, pos.y, pos.z, speed * dir.getStepX(), 0, speed * dir.getStepZ());
-
-
-        double rotation = (level.getOverworldClockTime() % 24000) / 24000D;
-        double offset;
-        double offsetX;
-        double offsetY;
-
-        for (int i = 0; i < 2; i++) {
-            effect = effects.get(i);
-            effect.scale = (float) depProg;
-            effect.onUpdate();
-            offset = rotation * (Math.PI * 2);
-            offsetX = Math.cos(offset) * 2.5 * depProg;
-            offsetY = Math.sin(offset) * 2.5 * depProg;
-            effect.pos = focus.copy().add(offsetX, offsetY, 0);
-            rotation += 0.5F;
-            effect.effectFocus = focus;
-        }
-
-        rotation = timer / 50D;
-
-        double inc = 1D / (effects.size() - 2);
-        for (int i = 2; i < effects.size(); i++) {
-            effect = effects.get(i);
-            offset = rotation * (Math.PI * 2);
-            double x = Math.cos(offset) * 1 * depProg;
-            double z = Math.sin(offset) * 1 * depProg;
-            effect.scale = (float) depProg;
-            effect.onUpdate();
-
-            effect.pos = focus.copy().add(x, (i % 2 == 0 ? x : -x) * 0.8, z);
-            if (i % 2 == 0) {
-                effect.red = 0.9F;
-                effect.green = 0.5F;
-                effect.blue = 0.1F;
-            } else {
-                effect.red = 0.3F;
-                effect.green = 0.2F;
-                effect.blue = 1;
+            if (timer == ascendStart) {
+                for (int i = 0; i < 100; i++) {
+                    IntParticleData data = new IntParticleData(DEParticles.SPARK.get(),
+                            0, //R
+                            127,  //G
+                            255,  //B
+                            (int) (5F * (level.getRandom().nextFloat() + 0.1) * 100), //Scale
+                            (int) (100 * 100), //Spark scale
+                            80, 0, //Max Age, Additional random age
+                            (int) (-0.5 * 1000), //Gravity
+                            (int) (1F * 1000) //Friction
+                            //Set velocity direct
+                    );
+                    Vector3 pos = Vector3.fromTileCenter(TileCelestialManipulator.this);
+                    level.addParticle(data, pos.x, pos.y, pos.z, 0.5 * level.getRandom().nextGaussian(), 0, 0.5 * level.getRandom().nextGaussian());
+                }
             }
 
-            effect.effectFocus = focus;
-            effect.renderBolts = false;
-            rotation += inc;
+
+            if (timer == riseEnd) {
+    //            level.playLocalSound(effectFocus.x, effectFocus.y, effectFocus.z, DESounds.fusionComplete, SoundSource.BLOCKS, 1F, 1F, false);
+            } else if (timer == ascendStart) {
+                level.playLocalSound(effectFocus.x, effectFocus.y, effectFocus.z, DESounds.FUSION_COMPLETE.get(), SoundSource.BLOCKS, 1F, 2F, false);
+                for (int i = 0; i < 100; i++) {
+                    try {
+                        //                    SubParticle particle = new SubParticle(world, effects.get(world.rand.nextInt(effects.size())).pos);
+                        //                    particle.setScale(2);
+                        //TODO particles
+                        //                    BCEffectHandler.spawnFXDirect(DEParticles.DE_SHEET, particle, 128, true);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+
+            }
+
+            sound.updateSound(effectFocus.copy().add(0, -(height * 0.8), 0), (float) expansion, (float) expansion + 0.5F);
+
+            for (EffectTrackerCelestialManipulator effect : effects) {
+                effect.onUpdate();
+            }
+
+            double rotation = (double) timer * (expansion * 0.05D);
+            for (EffectTrackerCelestialManipulator effect : effects) {
+                effect.effectFocus = effectFocus;
+                effect.scale = (float) expansion * (1F + (float) (ascPos * 5));
+
+                double indexPos = (double) effects.indexOf(effect) / (double) effects.size();
+                double offset = indexPos * (Math.PI * 2);
+                double offsetX = Math.sin(rotation + offset) * expansion * (3 + secondaryExpand);
+                double offsetZ = Math.cos(rotation + offset) * expansion * (3 + secondaryExpand);
+
+                effect.pos = effectFocus.copy().add(offsetX, 0, offsetZ);
+
+                offset = (indexPos + (1D / (double) effects.size())) * (Math.PI * 2);
+                offsetX = Math.sin(rotation + offset) * expansion * (3 + secondaryExpand);
+                offsetZ = Math.cos(rotation + offset) * expansion * (3 + secondaryExpand);
+                effect.linkPos = effectFocus.copy().add(offsetX, 0, offsetZ);
+            }
+
+            if (timer >= 220) {
+                level.playLocalSound(effectFocus.x, effectFocus.y, effectFocus.z, DESounds.BOOM.get(), SoundSource.BLOCKS, DEOldConfig.disableLoudCelestialManipulator ? 1 : 100, 1F, false);
+                timer = 0;
+                weatherToggleRunning.set(false);
+                effects.clear();
+                sound.kill();
+                sound = null;
+            }
         }
-    }
 
-    //endregion
+        //endregion
 
-    //region Rendering
+        //region Sun Effect
+
+        public void startSunEffect() {
+            timeWarpRunning.set(true);
+            timeWarpStopping.set(false);
+            timer = 0;
+
+            effects = new LinkedList<>();
+            for (int i = 0; i < 12; i++) {
+                effects.add(new EffectTrackerCelestialManipulator(level, Vec3D.getCenter(worldPosition).add(0, 1.5, 0), Vec3D.getCenter(worldPosition).add(0, 1.5, 0)));
+            }
+
+            effects.get(0).red = 1F;
+            effects.get(0).green = 0.821F;
+            effects.get(0).blue = 0.174F;
+            effects.get(0).renderBolts = false;
+
+            effects.get(1).red = 1F;
+            effects.get(1).green = 1F;
+            effects.get(1).blue = 1F;
+            effects.get(1).renderBolts = false;
+
+            sound = new CelestialModifierSound(DESounds.SUN_DIAL_EFFECT.get(), worldPosition, level.getRandom());
+            sound.updateSound(Vec3D.getCenter(worldPosition), getSoundVolume(), 0.5F);
+            Minecraft.getInstance().getSoundManager().play(sound);
+        }
+
+        public void stopSunEffect() {
+            timeWarpRunning.set(false);
+            timeWarpStopping.set(true);
+            if (timer > 100) {
+                timer = 100;
+            }
+        }
+
+        public void updateSunEffect() {
+            if (effects == null || effects.size() < 2 || sound == null) {
+                startSunEffect();
+            }
+
+            double depProg = Math.min(timer / 100F, 1D);
+
+            EffectTrackerCelestialManipulator effect;
+            Vec3D focus = Vec3D.getCenter(worldPosition).add(0, 5.5 * depProg, 0);
+            sound.updateSound(focus, (float) depProg, 0.5F + (float) depProg);
+
+    //		if (timer % 4 == 0) {
+    //			for (int i = 0; i < (timer % 20 <= 10 ? 10 : 2); i++) {
+    //				//TODO particles
+    //				//                BCEffectHandler.spawnFXDirect(DEParticles.DE_SHEET, new EffectTrackerCelestialManipulator.SubParticle2(world, focus, effects.get(i % 2)), 128, true);
+    //			}
+    //		}
+
+            IntParticleData data = new IntParticleData(DEParticles.SPARK.get(),
+                    255, //R
+                    127,  //G
+                    0,  //B
+                    (int) (1.2F * (level.getRandom().nextFloat() + 0.1) * 100), //Scale
+                    (int) (0.5F * 100), //Spark scale
+                    30, 10, //Max Age, Additional random age
+                    (int) (0) //Gravity
+            );
+            Vector3 pos = Vector3.fromTileCenter(TileCelestialManipulator.this);
+            level.addParticle(data, pos.x, pos.y, pos.z, 0.002D, 0.04, 0.002D);
+
+            Direction dir = Direction.values()[2 + level.getRandom().nextInt(4)];
+            data = new IntParticleData(DEParticles.SPARK.get(),
+                    255, //R
+                    127,  //G
+                    255,  //B
+                    (int) (1F * (level.getRandom().nextFloat() + 0.1) * 100), //Scale
+                    (int) (0.5F * 100), //Spark scale
+                    10, 0, //Max Age, Additional random age
+                    (int) (0), //Gravity
+                    (int) (1F * 1000), //Friction
+                    1 //Set velocity direct
+            );
+            double speed = 0.3 / 10;
+            pos = Vector3.fromTileCenter(TileCelestialManipulator.this).add(dir.getStepX() * -0.3, 0, dir.getStepZ() * -0.3);
+            level.addParticle(data, pos.x, pos.y, pos.z, speed * dir.getStepX(), 0, speed * dir.getStepZ());
+
+
+            double rotation = (level.getOverworldClockTime() % 24000) / 24000D;
+            double offset;
+            double offsetX;
+            double offsetY;
+
+            for (int i = 0; i < 2; i++) {
+                effect = effects.get(i);
+                effect.scale = (float) depProg;
+                effect.onUpdate();
+                offset = rotation * (Math.PI * 2);
+                offsetX = Math.cos(offset) * 2.5 * depProg;
+                offsetY = Math.sin(offset) * 2.5 * depProg;
+                effect.pos = focus.copy().add(offsetX, offsetY, 0);
+                rotation += 0.5F;
+                effect.effectFocus = focus;
+            }
+
+            rotation = timer / 50D;
+
+            double inc = 1D / (effects.size() - 2);
+            for (int i = 2; i < effects.size(); i++) {
+                effect = effects.get(i);
+                offset = rotation * (Math.PI * 2);
+                double x = Math.cos(offset) * 1 * depProg;
+                double z = Math.sin(offset) * 1 * depProg;
+                effect.scale = (float) depProg;
+                effect.onUpdate();
+
+                effect.pos = focus.copy().add(x, (i % 2 == 0 ? x : -x) * 0.8, z);
+                if (i % 2 == 0) {
+                    effect.red = 0.9F;
+                    effect.green = 0.5F;
+                    effect.blue = 0.1F;
+                } else {
+                    effect.red = 0.3F;
+                    effect.green = 0.2F;
+                    effect.blue = 1;
+                }
+
+                effect.effectFocus = focus;
+                effect.renderBolts = false;
+                rotation += inc;
+            }
+        }
+
+        //endregion
+
+        //region Rendering
 
         private void standbyParticleEffect() {
-        IntParticleData data = new IntParticleData(DEParticles.SPARK.get(),
-                76, //R
-                0,  //G
-                255,  //B
-                (int) (0.4F * (level.getRandom().nextFloat() + 0.1) * 100), //Scale
-                (int) (0.15F * 100), //Spark scale
-                30, 10, //Max Age, Additional random age
-                (int) (0) //Gravity
-        );
-        Vector3 pos = Vector3.fromTileCenter(this);
-        level.addParticle(data, pos.x, pos.y, pos.z, 0.002D, 0.01, 0.002D);
+            IntParticleData data = new IntParticleData(DEParticles.SPARK.get(),
+                    76, //R
+                    0,  //G
+                    255,  //B
+                    (int) (0.4F * (level.getRandom().nextFloat() + 0.1) * 100), //Scale
+                    (int) (0.15F * 100), //Spark scale
+                    30, 10, //Max Age, Additional random age
+                    (int) (0) //Gravity
+            );
+            Vector3 pos = Vector3.fromTileCenter(TileCelestialManipulator.this);
+            level.addParticle(data, pos.x, pos.y, pos.z, 0.002D, 0.01, 0.002D);
 
 
-        //        SubParticle particle = new SubParticle(world, Vec3D.getCenter(pos));
-        //        particle.setScale(0.2F);
-        //TODO particles
-        //        BCEffectHandler.spawnFXDirect(DEParticles.DE_SHEET, particle);
-        if (effects != null) {
-            effects = null;
+            //        SubParticle particle = new SubParticle(world, Vec3D.getCenter(pos));
+            //        particle.setScale(0.2F);
+            //TODO particles
+            //        BCEffectHandler.spawnFXDirect(DEParticles.DE_SHEET, particle);
+            if (effects != null) {
+                effects = null;
+            }
         }
-    }
 
-    public void extractEffects(float partialTicks, com.mojang.blaze3d.vertex.PoseStack pose,
-                               net.minecraft.client.renderer.MultiBufferSource buffers) {
-        if (effects == null) return;
-        for (EffectTrackerCelestialManipulator effect : effects) {
-            effect.extractEffect(pose, buffers, partialTicks, worldPosition, weatherToggleRunning.get());
+        public void extractEffects(float partialTicks, com.mojang.blaze3d.vertex.PoseStack pose,
+                                   net.minecraft.client.renderer.MultiBufferSource buffers) {
+            if (effects == null) return;
+            for (EffectTrackerCelestialManipulator effect : effects) {
+                effect.extractEffect(pose, buffers, partialTicks, worldPosition, weatherToggleRunning.get());
+            }
         }
-    }
 
-    //endregion
+        //endregion
+    }
 
     private String[] ACTIONS = new String[]{"STOP_RAIN", "START_RAIN", "START_STORM", "SUN_RISE", "MID_DAY", "SUN_SET", "MOON_RISE", "MIDNIGHT", "MOON_SET", "SKIP_24"};
 

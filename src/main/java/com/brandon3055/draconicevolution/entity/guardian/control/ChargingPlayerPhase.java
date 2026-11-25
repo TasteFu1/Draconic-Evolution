@@ -74,7 +74,7 @@ public class ChargingPlayerPhase extends Phase {
             debug("Aborting charge, Master timed out");
         }
         else if (charging && timeSinceCharge < 20 && timeSinceCharge % 5 == 0) {
-            guardian.playSound(SoundEvents.ENDER_DRAGON_GROWL.value(), 20, 0.95F + (guardian.getRandom().nextFloat() * 0.2F));
+            guardian.playSound(SoundEvents.ENDER_DRAGON_GROWL, 20, 0.95F + (guardian.getRandom().nextFloat() * 0.2F));
         }
 
         tick++;

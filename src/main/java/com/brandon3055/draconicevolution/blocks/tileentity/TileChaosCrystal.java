@@ -78,7 +78,7 @@ public class TileChaosCrystal extends TileBCore {
     public void tick() {
         if (validatePlacement) {
             posLock.set(worldPosition.asLong());
-            dimLock.set(level.dimension().location().toString());
+            dimLock.set(level.dimension().identifier().toString());
             for (int i = 1; i <= 2; i++) {
                 level.setBlockAndUpdate(worldPosition.above(i), DEContent.CHAOS_CRYSTAL_PART.get().defaultBlockState());
                 level.setBlockAndUpdate(worldPosition.below(i), DEContent.CHAOS_CRYSTAL_PART.get().defaultBlockState());
@@ -108,7 +108,6 @@ public class TileChaosCrystal extends TileBCore {
             int z = 5 - level.getRandom().nextInt(11);
             LightningBolt bolt = new LightningBolt(EntityType.LIGHTNING_BOLT, level);
             bolt.setPos(worldPosition.getX() + x, level.getHeightmapPos(Heightmap.Types.WORLD_SURFACE, worldPosition).getY(), worldPosition.getZ() + z);
-            bolt.noCulling = true;
             level.addFreshEntity(bolt);
         }
     }
@@ -185,7 +184,7 @@ public class TileChaosCrystal extends TileBCore {
     }
 
     private boolean hasBeenMoved() {
-        return posLock.get() != worldPosition.asLong() || !dimLock.get().equals(level.dimension().location().toString());
+        return posLock.get() != worldPosition.asLong() || !dimLock.get().equals(level.dimension().identifier().toString());
     }
 
     @Override
@@ -206,13 +205,9 @@ public class TileChaosCrystal extends TileBCore {
         return false;
     }
 
-    // port-26.1.2: BlockBehaviour.onRemove удалён в 26 — логика перенесена сюда;
-    // срабатывает при удалении BE из-за смены блока (guard отличает выгрузку чанка).
     @Override
-    public void setRemoved() {
-        super.setRemoved();
-        if (level() instanceof ServerLevel sl && sl.getBlockState(worldPosition).getBlock() != getBlockState().getBlock()) {
-            detonate(null);
-        }
+    public void preRemoveSideEffects(BlockPos pos, BlockState state) {
+        super.preRemoveSideEffects(pos, state);
+        detonate(null);
     }
 }

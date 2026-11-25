@@ -16,8 +16,7 @@ import net.minecraft.world.MenuProvider;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.neoforge.transfer.transaction.SnapshotJournal;
 
 /**
  * Created by brandon3055 on 15/11/2016.
@@ -31,6 +30,20 @@ public abstract class TileFlowGate extends TileBCore implements IChangeListener,
     public final ManagedLong flowOverride = register(new ManagedLong("flow_override", DataFlags.SAVE_NBT_SYNC_TILE));
     public final ManagedBool flowOverridden = register(new ManagedBool("flow_overridden", DataFlags.SAVE_NBT_SYNC_TILE));
     public final ManagedByte rsSignal = register(new ManagedByte("rs_signal", (byte) -1, DataFlags.SAVE_NBT_SYNC_TILE));
+
+    // Shared by both faces. Nested aborts restore the quota along with the neighboring storage.
+    protected final SnapshotJournal<Long> flowJournal = new SnapshotJournal<>() {
+        @Override protected Long createSnapshot() { return transferThisTick; }
+        @Override protected void revertToSnapshot(Long snapshot) { transferThisTick = snapshot; }
+    };
+
+    protected long availableFlow() {
+        // Querying/simulating must not populate a managed-field cache or send updates.
+        int signal = rsSignal.get() < 0 ? level.getBestNeighborSignal(worldPosition) : rsSignal.get();
+        long flow = flowOverridden.get() ? flowOverride.get() : minFlow.get()
+                + (long) ((signal / 15D) * (maxFlow.get() - minFlow.get()));
+        return Math.max(0, flow - transferThisTick);
+    }
 
     private Direction rotationCache = null;
 
@@ -48,12 +61,10 @@ public abstract class TileFlowGate extends TileBCore implements IChangeListener,
 
     public abstract String getUnits();
 
-    @OnlyIn(Dist.CLIENT)
     public void setMin(String value) {
         sendPacketToServer(output -> output.writeString(value), 0);
     }
 
-    @OnlyIn(Dist.CLIENT)
     public void setMax(String value) {
         sendPacketToServer(output -> output.writeString(value), 1);
     }

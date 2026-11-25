@@ -3,18 +3,19 @@ package com.brandon3055.draconicevolution.lib;
 import codechicken.lib.data.MCDataInput;
 import codechicken.lib.data.MCDataOutput;
 import com.brandon3055.brandonscore.api.power.IOInfo;
-import com.brandon3055.brandonscore.api.power.IOPStorage;
 import com.brandon3055.brandonscore.api.power.IOTracker;
 import com.brandon3055.brandonscore.api.power.IOTrackerSelfTimed;
 import com.brandon3055.brandonscore.lib.IMCDataSerializable;
 import com.brandon3055.brandonscore.lib.IValueHashable;
 import com.brandon3055.brandonscore.utils.Utils;
 import com.google.common.math.BigIntegerMath;
-import net.minecraft.core.HolderLookup;
+import com.brandon3055.brandonscore.lib.datamanager.BCSerializable;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import com.brandon3055.draconicevolution.lib.INBTSerializable; // port-26.1.2: neoforge INBTSerializable удалён
+import net.neoforged.neoforge.transfer.TransferPreconditions;
+import net.neoforged.neoforge.transfer.transaction.SnapshotJournal;
+import net.neoforged.neoforge.transfer.transaction.TransactionContext;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import javax.annotation.Nullable;
@@ -30,7 +31,7 @@ import java.util.function.Supplier;
 /**
  * Created by brandon3055 on 21/09/2022
  */
-public class OPStorageOP implements INBTSerializable<CompoundTag>, IValueHashable<OPStorageOP.ComparableValue>, IMCDataSerializable, IOPStorage {
+public class OPStorageOP implements BCSerializable<CompoundTag>, IValueHashable<OPStorageOP.ComparableValue>, IMCDataSerializable, TransactionalOPStorage {
 
     /**
      * The base storage for the current value minus overflow.
@@ -56,79 +57,102 @@ public class OPStorageOP implements INBTSerializable<CompoundTag>, IValueHashabl
         this.capacity = capacity;
     }
 
+    private long pendingInput;
+    private long pendingOutput;
+
+    private record EnergySnapshot(long stored, BigInteger overflow, long input, long output) {}
+
+    // All pylons connected to this core share both its tentative balance and its I/O history.
+    private final SnapshotJournal<EnergySnapshot> journal = new SnapshotJournal<>() {
+        @Override
+        protected EnergySnapshot createSnapshot() {
+            return new EnergySnapshot(valueStorage, overflowCount, pendingInput, pendingOutput);
+        }
+
+        @Override
+        protected void revertToSnapshot(EnergySnapshot state) {
+            valueStorage = state.stored;
+            overflowCount = state.overflow;
+            pendingInput = state.input;
+            pendingOutput = state.output;
+        }
+
+        @Override
+        protected void onRootCommit(EnergySnapshot original) {
+            long input = pendingInput;
+            long output = pendingOutput;
+            pendingInput = 0;
+            pendingOutput = 0;
+            recordTransfer(input, output);
+        }
+    };
+
+    @Override
+    public int insert(int amount, TransactionContext transaction) {
+        TransferPreconditions.checkNonNegative(amount);
+        return (int) receive(amount, false, transaction);
+    }
+
+    @Override
+    public int extract(int amount, TransactionContext transaction) {
+        TransferPreconditions.checkNonNegative(amount);
+        return (int) extract(amount, false, transaction);
+    }
+
     @Override
     public long extractOP(long maxExtract, boolean simulate) {
-        //If this is true we have over Long.MAX_VALUE stored.
-        if (!overflowCount.equals(BigInteger.ZERO)) {
-            if (!simulate) {
-                valueStorage -= maxExtract;
-                if (valueStorage <= 0) {
-                    valueStorage -= Long.MIN_VALUE;
-                    overflowCount = overflowCount.subtract(BigInteger.ONE);
-                }
-                if (ioTracker != null) {
-                    ioTracker.energyExtracted(maxExtract);
-                }
-                if (maxExtract != 0 && tile != null) {
-                    tile.setChanged();
-                }
-            }
-            return maxExtract;
+        return extract(maxExtract, simulate, null);
+    }
+
+    private long extract(long amount, boolean simulate, @Nullable TransactionContext transaction) {
+        long extracted = Math.min(getUncappedStored(), amount);
+        if (extracted <= 0) return 0;
+        if (simulate) return extracted;
+        if (transaction != null) journal.updateSnapshots(transaction);
+
+        if (extracted > valueStorage) {
+            valueStorage = Long.MAX_VALUE - (extracted - valueStorage);
+            overflowCount = overflowCount.subtract(BigInteger.ONE);
+        } else {
+            valueStorage -= extracted;
         }
 
-
-        long energyExtracted = Math.min(valueStorage, maxExtract);
-        if (!simulate) {
-            valueStorage -= energyExtracted;
-            if (ioTracker != null) {
-                ioTracker.energyExtracted(energyExtracted);
-            }
-            if (energyExtracted != 0 && tile != null) {
-                tile.setChanged();
-            }
-        }
-
-        return energyExtracted;
+        if (transaction == null) recordTransfer(0, extracted);
+        else pendingOutput += Math.min(extracted, Long.MAX_VALUE - pendingOutput);
+        return extracted;
     }
 
     @Override
     public long receiveOP(long maxReceive, boolean simulate) {
+        return receive(maxReceive, simulate, null);
+    }
+
+    private long receive(long amount, boolean simulate, @Nullable TransactionContext transaction) {
         long limit = capacity.get();
-        //We act like a normal energy storage
-        if (limit != -1) {
-            long energyReceived = Math.min(limit - valueStorage, maxReceive);
-            if (!simulate) {
-                valueStorage += energyReceived;
-                if (ioTracker != null) {
-                    ioTracker.energyInserted(energyReceived);
-                }
-                if (energyReceived != 0 && tile != null) {
-                    tile.setChanged();
-                }
-            }
-            return energyReceived;
+        long received = limit == -1 ? amount : Math.min(limit - valueStorage, amount);
+        if (received <= 0) return 0;
+        if (simulate) return received;
+        if (transaction != null) journal.updateSnapshots(transaction);
+
+        long space = Long.MAX_VALUE - valueStorage;
+        if (received > space) {
+            valueStorage = received - space;
+            overflowCount = overflowCount.add(BigInteger.ONE);
+        } else {
+            valueStorage += received;
         }
 
-        //Otherwise... We don't really need to worry about such things as 'limits'
+        if (transaction == null) recordTransfer(received, 0);
+        else pendingInput += Math.min(received, Long.MAX_VALUE - pendingInput);
+        return received;
+    }
 
-        if (!simulate) {
-            //The maximum energy that can be added before valueStorage overflows.
-            long maxB4Over = Long.MAX_VALUE - valueStorage;
-            if (maxReceive > maxB4Over) {
-                valueStorage = maxReceive - maxB4Over;
-                overflowCount = overflowCount.add(BigInteger.ONE);
-            } else {
-                valueStorage += maxReceive;
-            }
-            if (ioTracker != null) {
-                ioTracker.energyInserted(maxReceive);
-            }
-            if (maxReceive != 0 && tile != null) {
-                tile.setChanged();
-            }
+    private void recordTransfer(long input, long output) {
+        if (ioTracker != null) {
+            if (input > 0) ioTracker.energyInserted(input);
+            if (output > 0) ioTracker.energyExtracted(output);
         }
-
-        return maxReceive;
+        if (tile != null) tile.setChanged();
     }
 
     //This is capped at Long.MAX_VALUE / 2 to account for senders that preemptively check available space before sending energy.
@@ -191,7 +215,7 @@ public class OPStorageOP implements INBTSerializable<CompoundTag>, IValueHashabl
     }
 
     @Override
-    public CompoundTag serializeNBT(HolderLookup.Provider provider) {
+    public CompoundTag serializeNBT() {
         CompoundTag tag = new CompoundTag();
         tag.putLong("storage", valueStorage);
         if (!overflowCount.equals(BigInteger.ZERO)) {
@@ -201,11 +225,9 @@ public class OPStorageOP implements INBTSerializable<CompoundTag>, IValueHashabl
     }
 
     @Override
-    public void deserializeNBT(HolderLookup.Provider provider, CompoundTag nbt) {
+    public void deserializeNBT(CompoundTag nbt) {
         valueStorage = nbt.getLongOr("storage", 0L);
-        if (nbt.contains("overflow")) { // port-26.1.2
-            overflowCount = new BigInteger(nbt.getByteArray("overflow").orElse(new byte[0]));
-        }
+        overflowCount = nbt.getByteArray("overflow").filter(bytes -> bytes.length > 0).map(BigInteger::new).orElse(BigInteger.ZERO);
     }
 
     @Override

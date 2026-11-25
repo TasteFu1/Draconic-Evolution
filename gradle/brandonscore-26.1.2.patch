@@ -1,0 +1,342 @@
+diff --git a/build.gradle b/build.gradle
+index 5e68ef0..1813d65 100644
+--- a/build.gradle
++++ b/build.gradle
+@@ -15,6 +15,11 @@ java {
+     withJavadocJar()
+ }
+ 
++sourceSets.main.resources {
++    srcDir 'src/main/generated'
++    exclude '.cache/**'
++}
++
+ repositories {
+     mavenLocal()
+     maven { url "https://maven.covers1624.net/" }
+diff --git a/src/main/java/com/brandon3055/brandonscore/blocks/TileBCore.java b/src/main/java/com/brandon3055/brandonscore/blocks/TileBCore.java
+index 227c374..f884c2b 100644
+--- a/src/main/java/com/brandon3055/brandonscore/blocks/TileBCore.java
++++ b/src/main/java/com/brandon3055/brandonscore/blocks/TileBCore.java
+@@ -360,7 +360,7 @@ public class TileBCore extends BlockEntity implements com.brandon3055.brandonsco
+     protected final void saveAdditional(net.minecraft.world.level.storage.ValueOutput output) {
+         super.saveAdditional(output);
+         CompoundTag tag = new CompoundTag();
+-        dataManager.writeToNBT(tag);
++        dataManager.save(output);
+         writeExtraNBT(tag);
+         output.store(tag);
+     }
+@@ -369,7 +369,7 @@ public class TileBCore extends BlockEntity implements com.brandon3055.brandonsco
+     protected void loadAdditional(net.minecraft.world.level.storage.ValueInput input) {
+         super.loadAdditional(input);
+         CompoundTag tag = input.read(com.mojang.serialization.MapCodec.assumeMapUnsafe(CompoundTag.CODEC)).orElseGet(CompoundTag::new);
+-        dataManager.readFromNBT(tag);
++        dataManager.readFromNBT(tag, input.lookup());
+         readExtraNBT(tag);
+         onTileLoaded();
+     }
+diff --git a/src/main/java/com/brandon3055/brandonscore/client/gui/modular/ModularGuiContainer.java b/src/main/java/com/brandon3055/brandonscore/client/gui/modular/ModularGuiContainer.java
+index 83cd2a2..bc9f0b7 100644
+--- a/src/main/java/com/brandon3055/brandonscore/client/gui/modular/ModularGuiContainer.java
++++ b/src/main/java/com/brandon3055/brandonscore/client/gui/modular/ModularGuiContainer.java
+@@ -73,6 +73,13 @@ public class ModularGuiContainer<T extends AbstractContainerMenu> extends Abstra
+         modularGui.onScreenInit(minecraft, font, width, height);
+     }
+ 
++    @Override
++    public void extractBackground(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
++        if (modularGui.renderBackground()) {
++            super.extractBackground(graphics, mouseX, mouseY, partialTicks);
++        }
++    }
++
+     @Override
+     public void extractRenderState(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
+         GuiElement<?> root = modularGui.getRoot();
+@@ -80,10 +87,6 @@ public class ModularGuiContainer<T extends AbstractContainerMenu> extends Abstra
+         leftPos = (int) root.getValue(GeoParam.LEFT);
+ 
+ 
+-        if (modularGui.renderBackground()) {
+-            //Called here to ensure background renders before modularGui elements.
+-            super.extractBackground(graphics, mouseX, mouseY, partialTicks);
+-        }
+         GuiRender render = GuiRender.convert(graphics);
+         modularGui.render(render, partialTicks);
+ 
+diff --git a/src/main/java/com/brandon3055/brandonscore/client/gui/modular/ModularGuiScreen.java b/src/main/java/com/brandon3055/brandonscore/client/gui/modular/ModularGuiScreen.java
+index b010519..f0852d5 100644
+--- a/src/main/java/com/brandon3055/brandonscore/client/gui/modular/ModularGuiScreen.java
++++ b/src/main/java/com/brandon3055/brandonscore/client/gui/modular/ModularGuiScreen.java
+@@ -69,10 +69,14 @@ public class ModularGuiScreen extends Screen {
+     }
+ 
+     @Override
+-    public void extractRenderState(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
++    public void extractBackground(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
+         if (modularGui.renderBackground()) {
+-            extractBackground(graphics, mouseX, mouseY, partialTicks);
++            super.extractBackground(graphics, mouseX, mouseY, partialTicks);
+         }
++    }
++
++    @Override
++    public void extractRenderState(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
+         GuiRender render = GuiRender.convert(graphics);
+         modularGui.render(render, partialTicks);
+         //Ensure we render overlay on top of things like JEI
+diff --git a/src/main/java/com/brandon3055/brandonscore/client/gui/modular/sprite/ModAtlasHolder.java b/src/main/java/com/brandon3055/brandonscore/client/gui/modular/sprite/ModAtlasHolder.java
+index 812b918..2f43d62 100644
+--- a/src/main/java/com/brandon3055/brandonscore/client/gui/modular/sprite/ModAtlasHolder.java
++++ b/src/main/java/com/brandon3055/brandonscore/client/gui/modular/sprite/ModAtlasHolder.java
+@@ -27,7 +27,7 @@ import java.util.stream.Stream;
+  */
+ public class ModAtlasHolder implements PreparableReloadListener, AutoCloseable {
+ 
+-    private final TextureAtlas textureAtlas;
++    private TextureAtlas textureAtlas;
+     private final Identifier atlasLocation;
+     private final Identifier atlasInfoLocation;
+     private final String modid;
+@@ -45,12 +45,14 @@ public class ModAtlasHolder implements PreparableReloadListener, AutoCloseable {
+     public ModAtlasHolder(String modid, String atlasLocation, String atlasInfoLocation) {
+         this.atlasInfoLocation = Identifier.fromNamespaceAndPath(modid, atlasInfoLocation);
+         this.atlasLocation = Identifier.fromNamespaceAndPath(modid, atlasLocation);
+-        this.textureAtlas = new TextureAtlas(this.atlasLocation);
+         this.modid = modid;
+     }
+ 
+     public void init() {
+-        Minecraft.getInstance().getTextureManager().register(this.textureAtlas.location(), this.textureAtlas);
++        if (textureAtlas == null) {
++            textureAtlas = new TextureAtlas(atlasLocation);
++            Minecraft.getInstance().getTextureManager().register(atlasLocation, textureAtlas);
++        }
+     }
+ 
+     public Identifier atlasLocation() {
+@@ -74,7 +76,9 @@ public class ModAtlasHolder implements PreparableReloadListener, AutoCloseable {
+ 
+     @Override
+     public void close() {
+-        this.textureAtlas.clearTextureData();
++        if (textureAtlas != null) {
++            textureAtlas.clearTextureData();
++        }
+     }
+ 
+     public static class ModResourceManager implements ResourceManager {
+diff --git a/src/main/java/com/brandon3055/brandonscore/lib/datamanager/IManagedData.java b/src/main/java/com/brandon3055/brandonscore/lib/datamanager/IManagedData.java
+index ff1c795..4882883 100644
+--- a/src/main/java/com/brandon3055/brandonscore/lib/datamanager/IManagedData.java
++++ b/src/main/java/com/brandon3055/brandonscore/lib/datamanager/IManagedData.java
+@@ -2,7 +2,9 @@ package com.brandon3055.brandonscore.lib.datamanager;
+ 
+ import codechicken.lib.data.MCDataInput;
+ import codechicken.lib.data.MCDataOutput;
++import net.minecraft.core.HolderLookup;
+ import net.minecraft.nbt.CompoundTag;
++import net.minecraft.world.level.storage.ValueOutput;
+ 
+ /**
+  * Created by brandon3055 on 12/06/2017.
+@@ -51,11 +53,21 @@ public interface IManagedData {
+      */
+     void toNBT(CompoundTag compound);
+ 
++    default void writeTo(ValueOutput output) {
++        CompoundTag values = new CompoundTag();
++        toNBT(values);
++        output.store(values);
++    }
++
+     /**
+      * Load this data from nbt.
+      */
+     void fromNBT(CompoundTag compound);
+ 
++    default void fromNBT(CompoundTag compound, HolderLookup.Provider registries) {
++        fromNBT(compound);
++    }
++
+     /**
+      * Marks this data as 'dirty' meaning it needs to be saved/synchronized
+      */
+diff --git a/src/main/java/com/brandon3055/brandonscore/lib/datamanager/ManagedStack.java b/src/main/java/com/brandon3055/brandonscore/lib/datamanager/ManagedStack.java
+index 65a96e9..48b875d 100644
+--- a/src/main/java/com/brandon3055/brandonscore/lib/datamanager/ManagedStack.java
++++ b/src/main/java/com/brandon3055/brandonscore/lib/datamanager/ManagedStack.java
+@@ -2,7 +2,9 @@ package com.brandon3055.brandonscore.lib.datamanager;
+ 
+ import codechicken.lib.data.MCDataInput;
+ import codechicken.lib.data.MCDataOutput;
++import net.minecraft.core.HolderLookup;
+ import net.minecraft.nbt.CompoundTag;
++import net.minecraft.world.level.storage.ValueOutput;
+ import net.minecraft.world.item.ItemStack;
+ 
+ import java.util.Objects;
+@@ -105,9 +107,19 @@ public class ManagedStack extends AbstractManagedData<ItemStack> {
+         compound.store(name, ItemStack.OPTIONAL_CODEC, dataManager.registryAccess().createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE), value);
+     }
+ 
++    @Override
++    public void writeTo(ValueOutput output) {
++        output.store(name, ItemStack.OPTIONAL_CODEC, value);
++    }
++
+     @Override
+     public void fromNBT(CompoundTag compound) {
+-        value = compound.read(name, ItemStack.OPTIONAL_CODEC, dataManager.registryAccess().createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE)).orElse(ItemStack.EMPTY);
++        fromNBT(compound, dataManager.registryAccess());
++    }
++
++    @Override
++    public void fromNBT(CompoundTag compound, HolderLookup.Provider registries) {
++        value = compound.read(name, ItemStack.OPTIONAL_CODEC, registries.createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE)).orElse(ItemStack.EMPTY);
+         notifyListeners(value);
+     }
+ 
+diff --git a/src/main/java/com/brandon3055/brandonscore/lib/datamanager/TileDataManager.java b/src/main/java/com/brandon3055/brandonscore/lib/datamanager/TileDataManager.java
+index 78de3f7..f596451 100644
+--- a/src/main/java/com/brandon3055/brandonscore/lib/datamanager/TileDataManager.java
++++ b/src/main/java/com/brandon3055/brandonscore/lib/datamanager/TileDataManager.java
+@@ -10,7 +10,9 @@ import com.brandon3055.brandonscore.inventory.ContainerBCore;
+ import com.brandon3055.brandonscore.lib.DelayedTask;
+ import com.brandon3055.brandonscore.network.BCoreNetwork;
+ import com.brandon3055.brandonscore.utils.DataUtils;
++import net.minecraft.core.HolderLookup;
+ import net.minecraft.nbt.CompoundTag;
++import net.minecraft.world.level.storage.ValueOutput;
+ import net.minecraft.server.level.ServerPlayer;
+ import net.minecraft.world.entity.player.Player;
+ import net.minecraft.world.inventory.AbstractContainerMenu;
+@@ -184,6 +186,17 @@ public class TileDataManager<T extends BlockEntity & IDataManagerProvider> imple
+         compound.put(BlockBCore.BC_MANAGED_DATA_FLAG, dataTag);
+     }
+ 
++    public void save(ValueOutput output) {
++        ValueOutput values = output.child(BlockBCore.BC_MANAGED_DATA_FLAG);
++        DataUtils.forEachMatch(managedDataList, data -> data.flags().saveNBT, data -> data.writeTo(values));
++    }
++
++    public void readFromNBT(CompoundTag compound, HolderLookup.Provider registries) {
++        compound.getCompound(BlockBCore.BC_MANAGED_DATA_FLAG).ifPresent(values ->
++                DataUtils.forEachMatch(managedDataList, data -> data.flags().saveNBT,
++                        data -> data.fromNBT(values, registries)));
++    }
++
+     @Override
+     public void readFromNBT(CompoundTag compound) {
+         if ((compound.get(BlockBCore.BC_MANAGED_DATA_FLAG) instanceof net.minecraft.nbt.CompoundTag)) {
+diff --git a/src/main/resources/assets/brandonscore/lang/ru_ru.json b/src/main/resources/assets/brandonscore/lang/ru_ru.json
+new file mode 100644
+index 0000000..18c723b
+--- /dev/null
++++ b/src/main/resources/assets/brandonscore/lang/ru_ru.json
+@@ -0,0 +1,104 @@
++{
++  "gui.brandonscore.hud_config.enabled.false": "Отключено",
++  "gui.brandonscore.hud_config.enabled.true": "Включено",
++  "gui.brandonscore.hud_config.name": "Настройка интерфейса Draconic Evolution",
++  "gui.brandonscore.hud_config.settings": "Открыть настройки",
++  "gui_tkt.brandonscore.click_out_close": "Нажмите за пределами окна, чтобы закрыть его",
++  "gui_tkt.brandonscore.info_panel.closed": "Показать дополнительные сведения",
++  "gui_tkt.brandonscore.info_panel.open": "Скрыть дополнительные сведения",
++  "gui_tkt.brandonscore.large_view": "Увеличенный вид",
++  "gui_tkt.brandonscore.large_view.close": "Нажмите за пределами окна или нажмите Esc, чтобы закрыть его",
++  "gui_tkt.brandonscore.rs_mode.active_high": "Работает при сигнале редстоуна",
++  "gui_tkt.brandonscore.rs_mode.active_low": "Работает без сигнала редстоуна",
++  "gui_tkt.brandonscore.rs_mode.always_active": "Всегда включено",
++  "gui_tkt.brandonscore.rs_mode.never_active": "Всегда выключено",
++  "gui_tkt.brandonscore.theme.dark": "Тёмная тема",
++  "gui_tkt.brandonscore.theme.light": "Светлая тема",
++  "gui_tkt.brandonscore.your_inventory": "Инвентарь",
++  "hud.brandonscore.block_hud.info": "Показывает сведения о блоках Draconic Evolution, на которые вы смотрите.\nПо умолчанию отключено.",
++  "hud.brandonscore.block_hud.name": "Сведения о блоках",
++  "hud.brandonscore.block_item_hud.info": "Объединяет сведения о блоках и предметах в одной панели.",
++  "hud.brandonscore.block_item_hud.name": "Сведения о блоках и предметах",
++  "hud.brandonscore.item_hud.info": "Показывает сведения о предметах Draconic Evolution, которые вы держите в руке.\nПо умолчанию отключено.",
++  "hud.brandonscore.item_hud.name": "Сведения о предметах",
++  "info.brandonscore.block_has_saved_data": "Содержимое сохранено.",
++  "item_info.brandonscore.shift_for_details": "Удерживайте %sShift%s для подробностей",
++  "mod_gui.brandonscore.button.cancel": "Отмена",
++  "mod_gui.brandonscore.button.no": "Нет",
++  "mod_gui.brandonscore.button.ok": "ОК",
++  "mod_gui.brandonscore.button.yes": "Да",
++  "mod_gui.brandonscore.energy_bar.capacity": "Ёмкость",
++  "mod_gui.brandonscore.energy_bar.input": "Вход",
++  "mod_gui.brandonscore.energy_bar.io": "Вход/выход",
++  "mod_gui.brandonscore.energy_bar.op": "OP",
++  "mod_gui.brandonscore.energy_bar.operational_potential": "Рабочий потенциал",
++  "mod_gui.brandonscore.energy_bar.output": "Выход",
++  "mod_gui.brandonscore.energy_bar.rf": "RF",
++  "mod_gui.brandonscore.energy_bar.stored": "Накоплено",
++  "mod_gui.brandonscore.entity_filter": "Фильтр сущностей",
++  "mod_gui.brandonscore.entity_filter.add_filter": "Добавить фильтр",
++  "mod_gui.brandonscore.entity_filter.adults": "Фильтр по возрасту",
++  "mod_gui.brandonscore.entity_filter.adults.false": "Только детёныши",
++  "mod_gui.brandonscore.entity_filter.adults.true": "Только взрослые",
++  "mod_gui.brandonscore.entity_filter.and_group.button.false": "Любое условие",
++  "mod_gui.brandonscore.entity_filter.and_group.button.true": "Все условия",
++  "mod_gui.brandonscore.entity_filter.and_group.false": "Пропускает сущность, если она соответствует хотя бы одному фильтру этой группы.",
++  "mod_gui.brandonscore.entity_filter.and_group.true": "Пропускает сущность, если она соответствует всем фильтрам этой группы.",
++  "mod_gui.brandonscore.entity_filter.delete.all": "Тройной щелчок удаляет все условия.",
++  "mod_gui.brandonscore.entity_filter.delete.node": "Двойной щелчок удаляет условие.",
++  "mod_gui.brandonscore.entity_filter.entity_type": "Фильтр по типу сущности",
++  "mod_gui.brandonscore.entity_filter.entity_type.false": "Исключить сущность",
++  "mod_gui.brandonscore.entity_filter.entity_type.find": "Выбрать из списка сущностей",
++  "mod_gui.brandonscore.entity_filter.entity_type.name": "Название",
++  "mod_gui.brandonscore.entity_filter.entity_type.suggestion": "Введите идентификатор сущности",
++  "mod_gui.brandonscore.entity_filter.entity_type.true": "Включить сущность",
++  "mod_gui.brandonscore.entity_filter.entity_type.unknown": "Неизвестный или неверный идентификатор сущности",
++  "mod_gui.brandonscore.entity_filter.filter_group": "Группа фильтров",
++  "mod_gui.brandonscore.entity_filter.hostile": "Фильтр по враждебности",
++  "mod_gui.brandonscore.entity_filter.hostile.false": "Только мирные мобы",
++  "mod_gui.brandonscore.entity_filter.hostile.true": "Только враждебные мобы",
++  "mod_gui.brandonscore.entity_filter.item.blocks_only": "Только блоки",
++  "mod_gui.brandonscore.entity_filter.item.false": "Исключить совпадающие стопки",
++  "mod_gui.brandonscore.entity_filter.item.find_tag": "Найти тег предмета",
++  "mod_gui.brandonscore.entity_filter.item.fuzzy.false": "Точное совпадение",
++  "mod_gui.brandonscore.entity_filter.item.fuzzy.info": "Приблизительный поиск игнорирует прочность и данные предмета.\nТочное сравнение требует полного совпадения.",
++  "mod_gui.brandonscore.entity_filter.item.fuzzy.true": "Приблизительное совпадение",
++  "mod_gui.brandonscore.entity_filter.item.invalid_tag": "Неизвестный или неверный тег",
++  "mod_gui.brandonscore.entity_filter.item.items_blocks.info": "Задаёт режим поиска, когда образец предмета не указан.",
++  "mod_gui.brandonscore.entity_filter.item.items_only": "Только предметы",
++  "mod_gui.brandonscore.entity_filter.item.items_or_blocks": "Предметы и блоки",
++  "mod_gui.brandonscore.entity_filter.item.match_count.false": "Игнорировать количество",
++  "mod_gui.brandonscore.entity_filter.item.match_count.true": "Учитывать количество",
++  "mod_gui.brandonscore.entity_filter.item.tag.false": "По образцу предмета",
++  "mod_gui.brandonscore.entity_filter.item.tag.suggestion": "Введите название тега",
++  "mod_gui.brandonscore.entity_filter.item.tag.true": "По тегу предмета",
++  "mod_gui.brandonscore.entity_filter.item.tag_matches": "Найдено подходящих предметов: %s",
++  "mod_gui.brandonscore.entity_filter.item.true": "Включить совпадающие стопки",
++  "mod_gui.brandonscore.entity_filter.item_filter": "Фильтр предметов",
++  "mod_gui.brandonscore.entity_filter.non_ageable.false": "Исключать мобов без возраста",
++  "mod_gui.brandonscore.entity_filter.non_ageable.info": "Мобы без возраста считаются взрослыми, если включена эта настройка.",
++  "mod_gui.brandonscore.entity_filter.non_ageable.true": "Включать мобов без возраста",
++  "mod_gui.brandonscore.entity_filter.player": "Фильтр игроков",
++  "mod_gui.brandonscore.entity_filter.player.false": "Исключить игроков",
++  "mod_gui.brandonscore.entity_filter.player.info": "Если не указано имя, фильтр распространяется на всех игроков.",
++  "mod_gui.brandonscore.entity_filter.player.name": "Имя",
++  "mod_gui.brandonscore.entity_filter.player.suggestion": "Введите имя игрока",
++  "mod_gui.brandonscore.entity_filter.player.true": "Включить игроков",
++  "mod_gui.brandonscore.entity_filter.search": "Поиск…",
++  "mod_gui.brandonscore.entity_filter.set_stack": "Перетащите сюда образец предмета.\nЩёлкните, чтобы очистить поле.",
++  "mod_gui.brandonscore.entity_filter.tamable.false": "Исключать приручаемых мобов",
++  "mod_gui.brandonscore.entity_filter.tamable.info": "Применяется к приручаемым мобам без владельца.",
++  "mod_gui.brandonscore.entity_filter.tamable.true": "Включать приручаемых мобов",
++  "mod_gui.brandonscore.entity_filter.tamed": "Фильтр по приручению",
++  "mod_gui.brandonscore.entity_filter.tamed.false": "Только неприручаемые мобы",
++  "mod_gui.brandonscore.entity_filter.tamed.true": "Только приручённые мобы",
++  "mod_gui.brandonscore.list_dialog.search": "Поиск",
++  "op.brandonscore.charge": "Заряд",
++  "op.brandonscore.op": "OP",
++  "op.brandonscore.op_capacity": "Ёмкость OP",
++  "op.brandonscore.op_stored": "Накоплено OP",
++  "op.brandonscore.op_transfer": "Передача OP",
++  "op.brandonscore.operational_potential": "Рабочий потенциал",
++  "struct_build.brandonscore.found_invalid": "Ошибка постройки: неверный блок «%s» на позиции %s.",
++  "struct_build.brandonscore.missing_required": "Ошибка постройки: для завершения не хватает блоков «%s»."
++}

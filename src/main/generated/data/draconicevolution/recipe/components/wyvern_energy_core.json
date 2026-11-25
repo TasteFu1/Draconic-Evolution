@@ -2,15 +2,9 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "A": {
-      "tag": "c:ingots/draconium"
-    },
-    "B": {
-      "tag": "c:storage_blocks/redstone"
-    },
-    "C": {
-      "item": "draconicevolution:draconium_core"
-    }
+    "A": "#c:ingots/draconium",
+    "B": "#c:storage_blocks/redstone",
+    "C": "draconicevolution:draconium_core"
   },
   "pattern": [
     "ABA",

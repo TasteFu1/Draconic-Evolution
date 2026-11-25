@@ -5,6 +5,10 @@ import codechicken.lib.colour.EnumColour;
 import codechicken.lib.data.MCDataInput;
 
 import com.brandon3055.brandonscore.api.power.IOPStorage;
+import com.brandon3055.draconicevolution.lib.TransactionalOPStorage;
+import net.neoforged.neoforge.transfer.TransferPreconditions;
+import net.neoforged.neoforge.transfer.transaction.SnapshotJournal;
+import net.neoforged.neoforge.transfer.transaction.TransactionContext;
 
 import com.brandon3055.brandonscore.blocks.TileBCore;
 
@@ -50,8 +54,6 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 
 import net.minecraft.world.level.block.state.BlockState;
 
-import net.minecraft.world.level.chunk.LevelChunk;
-
 import net.minecraft.world.phys.BlockHitResult;
 
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -60,9 +62,7 @@ import net.minecraft.world.phys.shapes.Shapes;
 
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-import net.neoforged.api.distmarker.Dist;
 
-import net.neoforged.api.distmarker.OnlyIn;
 
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 
@@ -92,7 +92,42 @@ public class TileEnergyPylon extends TileBCore implements MultiBlockController {
     private int tick = 0;
     private int lastCompOverride = 0;
 
-    public IOPStorage opAdapter = new IOPStorage() {
+    private byte pendingParticleRate;
+    private final SnapshotJournal<Byte> particleJournal = new SnapshotJournal<>() {
+        @Override protected Byte createSnapshot() { return pendingParticleRate; }
+        @Override protected void revertToSnapshot(Byte snapshot) { pendingParticleRate = snapshot; }
+        @Override protected void onRootCommit(Byte original) { particleRate.set(pendingParticleRate); }
+    };
+
+    private static byte particleRateFor(long energy) {
+        return (byte) Math.min(20, Math.max(1, energy / 500));
+    }
+
+    public IOPStorage opAdapter = new TransactionalOPStorage() {
+        @Override
+        public int insert(int amount, TransactionContext transaction) {
+            TransferPreconditions.checkNonNegative(amount);
+            TileEnergyCore core = getCore();
+            if (!canReceive() || core == null || !core.active.get()) return 0;
+            return showTransfer(core.energy.insert(amount, transaction), transaction);
+        }
+
+        @Override
+        public int extract(int amount, TransactionContext transaction) {
+            TransferPreconditions.checkNonNegative(amount);
+            TileEnergyCore core = getCore();
+            if (!canExtract() || core == null || !core.active.get()) return 0;
+            return showTransfer(core.energy.extract(amount, transaction), transaction);
+        }
+
+        private int showTransfer(int moved, TransactionContext transaction) {
+            if (moved > 0) {
+                particleJournal.updateSnapshots(transaction);
+                pendingParticleRate = particleRateFor(moved);
+            }
+            return moved;
+        }
+
         @Override
         public boolean canExtract() {
             return ioMode.get().canExtract();
@@ -110,7 +145,7 @@ public class TileEnergyPylon extends TileBCore implements MultiBlockController {
             }
             long received = core.energy.receiveOP(maxReceive, simulate);
             if (!simulate && received > 0) {
-                particleRate.set((byte) Math.min(20, received < 500 ? 1 : received / 500));
+                particleRate.set(particleRateFor(received));
             }
             return received;
         }
@@ -122,7 +157,7 @@ public class TileEnergyPylon extends TileBCore implements MultiBlockController {
             }
             long extracted = core.energy.extractOP(maxExtract, simulate);
             if (!simulate && extracted > 0) {
-                particleRate.set((byte) Math.min(20, extracted < 500 ? 1 : extracted / 500));
+                particleRate.set(particleRateFor(extracted));
             }
             return extracted;
         }
@@ -188,7 +223,7 @@ public class TileEnergyPylon extends TileBCore implements MultiBlockController {
         if (!level.isClientSide() && ioMode.get().canExtract()) {
             long extracted = core.energy.extractOP(sendEnergyToAll(core.energy.getUncappedStored(), core.energy.getUncappedStored()), false);
             if (extracted > 0) {
-                particleRate.set((byte) Math.min(20, extracted < 500 ? 1 : extracted / 500));
+                particleRate.set(particleRateFor(extracted));
             }
         }
 
@@ -224,30 +259,13 @@ public class TileEnergyPylon extends TileBCore implements MultiBlockController {
 
     @Nullable
     public TileEnergyCore getCore() {
-        BlockPos pos = coreOffset.get();
-        if (pos != null) {
-            BlockPos corePos = worldPosition.subtract(pos);
-            LevelChunk coreChunk = level.getChunkAt(corePos);
-
-            if (!level.isAreaLoaded(corePos, 16)) {
-                core = null;
-                return null;
-            }
-
-            BlockEntity tileAtPos = coreChunk.getBlockEntity(corePos, LevelChunk.EntityCreationType.CHECK);
-            if (tileAtPos == null || core == null || tileAtPos != core) {
-                BlockEntity tile = level.getBlockEntity(corePos);
-
-                if (tile instanceof TileEnergyCore) {
-                    core = (TileEnergyCore) tile;
-                } else {
-                    core = null;
-                    if (!level.isClientSide()) {
-                        coreOffset.set(null);
-                    }
-                }
-            }
-        }
+        BlockPos offset = coreOffset.get();
+        if (offset == null || level == null) return null;
+        BlockPos pos = worldPosition.subtract(offset);
+        if (!level.isAreaLoaded(pos, 16)) return null;
+        BlockEntity entity = level.getBlockEntity(pos);
+        core = entity instanceof TileEnergyCore energyCore ? energyCore : null;
+        if (core == null && !level.isClientSide()) coreOffset.set(null);
         return core;
     }
 
@@ -381,7 +399,6 @@ public class TileEnergyPylon extends TileBCore implements MultiBlockController {
         }
     }
 
-    @OnlyIn (Dist.CLIENT)
     private void spawnParticles() {
         RandomSource rand = level.getRandom();
         if (getCore() == null || particleRate.get() <= 0) return;
@@ -414,7 +431,6 @@ public class TileEnergyPylon extends TileBCore implements MultiBlockController {
         }
     }
 
-    @OnlyIn(Dist.CLIENT)
     private Vec3D getParticleSpawn(RandomSource random) {
         if (ioMode.get().canExtract()) {
             double range = core.tier.get();
@@ -424,7 +440,6 @@ public class TileEnergyPylon extends TileBCore implements MultiBlockController {
         }
     }
 
-    @OnlyIn(Dist.CLIENT)
     private Vec3D getParticleDest(RandomSource random) {
         if (ioMode.get().canExtract()) {
             return Vec3D.getCenter(worldPosition.relative(direction.get()));

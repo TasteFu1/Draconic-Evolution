@@ -40,9 +40,7 @@ import net.minecraft.world.level.Level;
 
 import net.minecraft.world.phys.AABB;
 
-import net.neoforged.api.distmarker.Dist;
 
-import net.neoforged.api.distmarker.OnlyIn;
 
 import net.neoforged.neoforge.common.NeoForge;
 
@@ -114,20 +112,19 @@ public class Magnet extends Item /*implements IBauble*/ {
         this.range = range;
     }
 
-    @OnlyIn(Dist.CLIENT)
     @Override
     public boolean isFoil(ItemStack stack) {
         return isEnabled(stack);
     }
 
     @Override
-    public void inventoryTick(ItemStack stack, Level level, Entity entity, int itemSlot, boolean isSelected) {
+    public void inventoryTick(ItemStack stack, net.minecraft.server.level.ServerLevel level, Entity entity, net.minecraft.world.entity.EquipmentSlot slot) {
         updateMagnet(stack, entity);
     }
 
     private void updateMagnet(ItemStack stack, Entity entity) {
         if (!entity.isShiftKeyDown() && isEnabled(stack) && entity instanceof Player player) {
-            Level world = entity.getCommandSenderWorld();
+            Level world = entity.level();
             List<ItemEntity> items;
             if (entity.tickCount % 10 == 0) {
                 items = world.getEntitiesOfClass(ItemEntity.class, new AABB(entity.getX(), entity.getY(), entity.getZ(), entity.getX(), entity.getY(), entity.getZ()).inflate(range, range, range));
@@ -217,7 +214,7 @@ public class Magnet extends Item /*implements IBauble*/ {
                         world.playSound(null, entity.getX(), entity.getY(), entity.getZ(), SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.1F, 0.5F * ((world.getRandom().nextFloat() - world.getRandom().nextFloat()) * 0.7F + 1.8F));
                     }
                     player.take(orb, 1);
-                    player.giveExperiencePoints(orb.value);
+                    player.giveExperiencePoints(orb.getValue());
                     orb.discard();
                 }
             }
@@ -233,14 +230,6 @@ public class Magnet extends Item /*implements IBauble*/ {
         return super.use(world, player, hand);
     }
 
-    @OnlyIn(Dist.CLIENT)
-    @SuppressWarnings("unchecked")
-    @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List list, TooltipFlag tooltipFlag) {
-//        list.add(StatCollector.translateToLocal("info.de.shiftRightClickToActivate.txt"));
-//        int range = stack.getItemDamage() == 0 ? 8 : 32;
-//        list.add(InfoHelper.HITC() + range + InfoHelper.ITC() + " " + StatCollector.translateToLocal("info.de.blockRange.txt"));
-    }
 
     public static boolean isEnabled(ItemStack stack) {
         return stack.getOrDefault(ItemData.MAGNET_ACTIVE, false);

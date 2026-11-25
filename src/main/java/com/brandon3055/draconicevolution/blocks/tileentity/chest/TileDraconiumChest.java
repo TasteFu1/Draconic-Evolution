@@ -4,7 +4,7 @@ import codechicken.lib.math.MathHelper;
 import com.brandon3055.brandonscore.api.power.OPStorage;
 import com.brandon3055.brandonscore.blocks.TileBCore;
 import com.brandon3055.brandonscore.capability.CapabilityOP;
-import com.brandon3055.brandonscore.inventory.TileItemStackHandler;
+import com.brandon3055.draconicevolution.inventory.ManagedItemHandler;
 import com.brandon3055.brandonscore.lib.IInteractTile;
 import com.brandon3055.brandonscore.lib.IRSSwitchable;
 import com.brandon3055.brandonscore.lib.datamanager.DataFlags;
@@ -43,10 +43,10 @@ public class TileDraconiumChest extends TileBCore implements IRSSwitchable, Menu
     public float prevLidAngle;
     public float lidAngle;
 
-    public TileItemStackHandler mainInventory = new TileItemStackHandler(this, 260);
-    public TileItemStackHandler craftingItems = new TileItemStackHandler(this, 10);
-    public TileItemStackHandler furnaceItems = new TileItemStackHandler(this, 5);
-    public TileItemStackHandler capacitorInv = new TileItemStackHandler(this, 1);
+    public ManagedItemHandler mainInventory = new ManagedItemHandler(this, 260);
+    public ManagedItemHandler craftingItems = new ManagedItemHandler(this, 10);
+    public ManagedItemHandler furnaceItems = new ManagedItemHandler(this, 5);
+    public ManagedItemHandler capacitorInv = new ManagedItemHandler(this, 1);
     public OPStorage opStorage = new ModularOPStorage(this, 1000000, 128000, 0);
 
     public SmeltingLogic smeltingLogic = new SmeltingLogic(this, furnaceItems, mainInventory, opStorage);
@@ -54,7 +54,7 @@ public class TileDraconiumChest extends TileBCore implements IRSSwitchable, Menu
     public TileDraconiumChest(BlockPos pos, BlockState state) {
         super(DEContent.TILE_DRACONIUM_CHEST.get(), pos, state);
         capManager.setManaged("energy", CapabilityOP.OP, opStorage).saveBoth().syncContainer();
-        capManager.setManaged("main_inv", Capabilities.Item.BLOCK, mainInventory).saveBoth();
+        capManager.setInternalManaged("main_inv", Capabilities.Item.BLOCK, mainInventory).saveBoth();
         capManager.setInternalManaged("crafting_inv", Capabilities.Item.BLOCK, craftingItems).saveBoth();
         capManager.setInternalManaged("furnace_inv", Capabilities.Item.BLOCK, furnaceItems).saveBoth();
         capManager.setInternalManaged("energy_inv", Capabilities.Item.BLOCK, capacitorInv).saveBoth();
@@ -69,9 +69,18 @@ public class TileDraconiumChest extends TileBCore implements IRSSwitchable, Menu
         installIOTracker(opStorage);
     }
 
+    @Override
+    public void setLevel(net.minecraft.world.level.Level level) {
+        super.setLevel(level);
+        mainInventory.loadPending();
+        craftingItems.loadPending();
+        furnaceItems.loadPending();
+        capacitorInv.loadPending();
+    }
+
     public static void register(RegisterCapabilitiesEvent event) {
         com.brandon3055.brandonscore.capability.CapabilityOP.registerBlockEntity(event, DEContent.TILE_DRACONIUM_CHEST.get());
-        capability(event, DEContent.TILE_DRACONIUM_CHEST, Capabilities.Item.BLOCK);
+        event.registerBlockEntity(Capabilities.Item.BLOCK, DEContent.TILE_DRACONIUM_CHEST.get(), (tile, side) -> tile.mainInventory.automation);
     }
 
     @Override

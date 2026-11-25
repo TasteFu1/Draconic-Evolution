@@ -64,9 +64,7 @@ import net.minecraft.world.level.block.BaseFireBlock;
 
 import net.minecraft.world.level.material.PushReaction;
 
-import net.neoforged.api.distmarker.Dist;
 
-import net.neoforged.api.distmarker.OnlyIn;
 
 import net.neoforged.neoforge.common.CommonHooks;
 
@@ -272,7 +270,7 @@ public class GuardianCrystalEntity extends Entity {
 
     @Override
     public boolean hurtServer(ServerLevel level, DamageSource source, float amount) { // port-26.1.2: Entity.hurt -> hurtServer
-        if (isInvulnerableTo(level, source)) {
+        if (isInvulnerableToBase(source)) {
             return false;
         } else {
             if (!isRemoved() && !level().isClientSide()) {
@@ -359,7 +357,6 @@ public class GuardianCrystalEntity extends Entity {
     }
 
     @Override
-    @OnlyIn (Dist.CLIENT)
     public boolean shouldRenderAtSqrDistance(double distance) {
         return super.shouldRenderAtSqrDistance(distance) || getBeamTarget() != null;
     }

@@ -54,7 +54,7 @@ public class CommandKaboom {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
                 Commands.literal("de_kaboom")
-                        .requires(cs -> cs.hasPermission(2))
+                        .requires(net.minecraft.commands.Commands.hasPermission(net.minecraft.commands.Commands.LEVEL_GAMEMASTERS))
                         .then(Commands.argument("radius", IntegerArgumentType.integer(10, 50000))
 //                                .executes(ctx -> calculate(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "radius"), new BlockPos(ctx.getSource().getPos()), false))
                                         .then(Commands.argument("position", BlockPosArgument.blockPos())
@@ -177,7 +177,7 @@ public class CommandKaboom {
     }
 
     private static int relight(CommandSourceStack source) {
-        BlockPos pos = BlockPos.containing(source.position());
+        BlockPos pos = BlockPos.containing(source.getPosition());
         ServerLevel world = source.getLevel();
         while (world.isEmptyBlock(pos)) pos = pos.below();
 

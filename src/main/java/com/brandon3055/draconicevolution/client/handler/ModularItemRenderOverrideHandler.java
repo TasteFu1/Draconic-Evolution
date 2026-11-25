@@ -12,12 +12,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.player.PlayerModel;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.ItemInHandRenderer;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.HumanoidArm;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.client.event.RenderHandEvent;
@@ -81,7 +80,7 @@ public class ModularItemRenderOverrideHandler {
             event.setCanceled(true);
             applyItemArmTransform(mStack, handside, equippedProgress);
 
-            mc.gameRenderer.itemInHandRenderer.renderItem(mc.player, stack, rightHand ? ItemDisplayContext.FIRST_PERSON_RIGHT_HAND : ItemDisplayContext.FIRST_PERSON_LEFT_HAND, !rightHand, mStack, event.getMultiBufferSource(), event.getPackedLight());
+            mc.gameRenderer.itemInHandRenderer.renderItem(mc.player, stack, rightHand ? ItemDisplayContext.FIRST_PERSON_RIGHT_HAND : ItemDisplayContext.FIRST_PERSON_LEFT_HAND, mStack, event.getSubmitNodeCollector(), event.getPackedLight());
             mStack.popPose();
         } else if (stack.getItem() instanceof IModularItem) {
             modularItemRenderOverride(stack, event);
@@ -108,9 +107,9 @@ public class ModularItemRenderOverrideHandler {
 
                         ItemInHandRenderer renderer = mc.gameRenderer.itemInHandRenderer;
                         if (event.getHand() == InteractionHand.MAIN_HAND) {
-                            renderArmWithItem(event, override, renderer, mc.player, InteractionHand.MAIN_HAND, event.getItemStack(), event.getEquipProgress(), event.getPoseStack(), event.getMultiBufferSource(), event.getPackedLight());
+                            renderArmWithItem(event, override, renderer, mc.player, InteractionHand.MAIN_HAND, event.getItemStack(), event.getEquipProgress(), event.getPoseStack(), event.getSubmitNodeCollector(), event.getPackedLight());
                         } else {
-                            renderArmWithItem(event, override, renderer, mc.player, InteractionHand.OFF_HAND, event.getItemStack(), event.getEquipProgress(), event.getPoseStack(), event.getMultiBufferSource(), event.getPackedLight());
+                            renderArmWithItem(event, override, renderer, mc.player, InteractionHand.OFF_HAND, event.getItemStack(), event.getEquipProgress(), event.getPoseStack(), event.getSubmitNodeCollector(), event.getPackedLight());
                         }
                     }
                 }
@@ -118,7 +117,7 @@ public class ModularItemRenderOverrideHandler {
         }
     }
 
-    private static void renderArmWithItem(RenderHandEvent event, EntityOverridesItemUse override, ItemInHandRenderer renderer, AbstractClientPlayer clientPlayer, InteractionHand hand, ItemStack stack, float handHeight, PoseStack poseStack, MultiBufferSource getter, int packedLight) {
+    private static void renderArmWithItem(RenderHandEvent event, EntityOverridesItemUse override, ItemInHandRenderer renderer, AbstractClientPlayer clientPlayer, InteractionHand hand, ItemStack stack, float handHeight, PoseStack poseStack, SubmitNodeCollector collector, int packedLight) {
         boolean renderingMainHand = hand == InteractionHand.MAIN_HAND;
         HumanoidArm renderingArm = renderingMainHand ? clientPlayer.getMainArm() : clientPlayer.getMainArm().getOpposite();
         boolean rightHanded = renderingArm == HumanoidArm.RIGHT;
@@ -128,15 +127,15 @@ public class ModularItemRenderOverrideHandler {
 
         override.modifyFirstPersonUsingPose(event, !rightHanded);
 
-        renderer.renderItem(clientPlayer, stack, rightHanded ? ItemDisplayContext.FIRST_PERSON_RIGHT_HAND : ItemDisplayContext.FIRST_PERSON_LEFT_HAND, !rightHanded, poseStack, getter, packedLight);
+        renderer.renderItem(clientPlayer, stack, rightHanded ? ItemDisplayContext.FIRST_PERSON_RIGHT_HAND : ItemDisplayContext.FIRST_PERSON_LEFT_HAND, poseStack, collector, packedLight);
         poseStack.popPose();
     }
 
-    public static void modifyPlayerPose(LivingEntity livingEntity, PlayerModel<?> model) {
-        ItemStack stack = livingEntity.getUseItem();
-        if (!(livingEntity instanceof Player player) || !livingEntity.isUsingItem() || stack.isEmpty() || livingEntity.getUseItemRemainingTicks() <= 0 || !(stack.getItem() instanceof IModularItem)) return;
-        boolean mainHand = player.getUsedItemHand() == InteractionHand.MAIN_HAND;
-        HumanoidArm arm = mainHand ? player.getMainArm() : player.getMainArm().getOpposite();
+    public static void modifyPlayerPose(AvatarRenderState state, PlayerModel model) {
+        if (!state.isUsingItem) return;
+        HumanoidArm arm = state.useItemHand == InteractionHand.MAIN_HAND ? state.mainArm : state.mainArm.getOpposite();
+        ItemStack stack = arm == HumanoidArm.LEFT ? state.leftHandItemStack : state.rightHandItemStack;
+        if (!(stack.getItem() instanceof IModularItem)) return;
         boolean leftHand = arm == HumanoidArm.LEFT;
 
         try (ModuleHost host = DECapabilities.getHost(stack)) {
@@ -144,7 +143,7 @@ public class ModularItemRenderOverrideHandler {
                 for (ModuleEntity<?> entity : host.getModuleEntities()) {
                     if (entity instanceof EntityOverridesItemUse override) {
                         if (!override.overrideUsingPose(stack)) return;
-                        override.modifyPlayerModelPose(player, model, leftHand);
+                        override.modifyPlayerModelPose(state, model, leftHand);
                     }
                 }
             }

@@ -34,7 +34,6 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 
 import net.minecraft.world.level.block.state.BlockState;
 
-import net.minecraft.world.level.chunk.LevelChunk;
 
 
 
@@ -50,7 +49,6 @@ public abstract class TileReactorComponent extends TileBCore {
     public final ManagedInt rsPower             = register(new ManagedInt("rs_power", DataFlags.SAVE_NBT_SYNC_TILE, DataFlags.TRIGGER_UPDATE));
     public float animRotation = 0;
     public float animRotationSpeed = 0;
-    private TileReactorCore cachedCore = null;
     public boolean coreFalureIminent = false;
     private boolean moveCheckComplete = false;
 
@@ -254,29 +252,13 @@ public abstract class TileReactorComponent extends TileBCore {
     }
 
     public TileReactorCore getCachedCore() {
-        if (isBound.get()) {
-            BlockPos corePos = getCorePos();
-            LevelChunk coreChunk = level.getChunkAt(corePos);
-
-            if (!level.isLoaded(corePos)) {
-                cachedCore = null;
-                return null;
-            }
-
-            BlockEntity tileAtPos = coreChunk.getBlockEntity(corePos, LevelChunk.EntityCreationType.CHECK);
-            if (tileAtPos == null || cachedCore == null || tileAtPos != cachedCore || tileAtPos.isRemoved()) {
-                BlockEntity tile = level.getBlockEntity(corePos);
-
-                if (tile instanceof TileReactorCore) {
-                    cachedCore = (TileReactorCore) tile;
-                }
-                else {
-                    cachedCore = null;
-                    isBound.set(false);
-                }
-            }
-        }
-        return cachedCore;
+        if (!isBound.get() || level == null) return null;
+        BlockPos corePos = getCorePos();
+        if (!level.isLoaded(corePos)) return null;
+        BlockEntity entity = level.getBlockEntity(corePos);
+        if (entity instanceof TileReactorCore reactor) return reactor;
+        if (!level.isClientSide()) isBound.set(false);
+        return null;
     }
 
     //endregion
@@ -395,13 +377,9 @@ public abstract class TileReactorComponent extends TileBCore {
 //        return EnumActionResult.FAIL;
 //    }
 
-    // port-26.1.2: BlockBehaviour.onRemove удалён в 26 — логика перенесена сюда;
-    // срабатывает при удалении BE из-за смены блока (guard отличает выгрузку чанка).
     @Override
-    public void setRemoved() {
-        super.setRemoved();
-        if (level() instanceof ServerLevel sl && sl.getBlockState(worldPosition).getBlock() != getBlockState().getBlock()) {
-            onBroken();
-        }
+    public void preRemoveSideEffects(BlockPos pos, BlockState state) {
+        super.preRemoveSideEffects(pos, state);
+        onBroken();
     }
 }

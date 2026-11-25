@@ -16,8 +16,6 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 
 import javax.annotation.Nullable;
 
@@ -53,7 +51,6 @@ public class RainSensor extends EntityBlockBCore {
         return super.getStateForPlacement(context);
     }
 
-    @OnlyIn (Dist.CLIENT)
     @Override
     public void animateTick(BlockState stateIn, Level worldIn, BlockPos pos, RandomSource rand) {
         if (stateIn.getValue(ACTIVE)) {
@@ -61,7 +58,6 @@ public class RainSensor extends EntityBlockBCore {
         }
     }
 
-    @Override
     // port-26.1.2: onRemove удалён в 26 — соседская логика в affectNeighborsAfterRemoval (вызов из LevelChunk: блок уже сменился)
     @Override
     protected void affectNeighborsAfterRemoval(BlockState state, net.minecraft.server.level.ServerLevel level, net.minecraft.core.BlockPos pos, boolean movedByPiston) {

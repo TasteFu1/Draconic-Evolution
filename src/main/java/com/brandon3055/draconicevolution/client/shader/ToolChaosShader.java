@@ -24,7 +24,7 @@ public final class ToolChaosShader extends BCShader<ToolChaosShader> {
     }
     @Override public RenderPipeline pipeline(VertexFormat.Mode mode) {
         return pipelines.computeIfAbsent(mode, m -> BCShaders.CHAOS_ENTITY_SHADER.pipeline(m).toBuilder()
-                .withLocation("draconicevolution:pipeline/tool_chaos_" + m.name().toLowerCase(java.util.Locale.ROOT))
+                .withLocation(Identifier.fromNamespaceAndPath("draconicevolution", "pipeline/tool_chaos_" + m.name().toLowerCase(java.util.Locale.ROOT)))
                 .withColorTargetState(ColorTargetState.DEFAULT).build());
     }
 }

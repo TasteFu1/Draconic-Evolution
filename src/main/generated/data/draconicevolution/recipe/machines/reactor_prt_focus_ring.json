@@ -2,15 +2,9 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "A": {
-      "tag": "c:ingots/gold"
-    },
-    "B": {
-      "tag": "c:gems/diamond"
-    },
-    "C": {
-      "item": "draconicevolution:wyvern_core"
-    }
+    "A": "#c:ingots/gold",
+    "B": "#c:gems/diamond",
+    "C": "draconicevolution:wyvern_core"
   },
   "pattern": [
     "ABA",
