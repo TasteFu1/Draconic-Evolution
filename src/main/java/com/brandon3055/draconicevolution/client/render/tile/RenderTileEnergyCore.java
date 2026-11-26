@@ -90,7 +90,9 @@ public class RenderTileEnergyCore implements BlockEntityRenderer<TileEnergyCore,
     public static class State extends BlockEntityRenderState {
         ExtractedModel geometry;
         ExtractedBuildGuide guide;
+        net.minecraft.client.renderer.block.BlockModelRenderState plainCore; // block effects off: draw the plain core block
     }
+    private static final net.minecraft.client.renderer.block.model.BlockDisplayContext PLAIN = net.minecraft.client.renderer.block.model.BlockDisplayContext.create();
 
     @Override
     public State createRenderState() { return new State(); }
@@ -105,15 +107,24 @@ public class RenderTileEnergyCore implements BlockEntityRenderer<TileEnergyCore,
         extractGeometry(tile, partialTicks, new PoseStack(), capture, state.lightCoords,
                 net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY);
         state.geometry = capture.finish();
+        state.plainCore = null;
+        if (!com.brandon3055.draconicevolution.DEConfig.blockEffectRendering && tile.active.get()) {
+            // An active core block is invisible (RenderShape); with effects off draw its inactive model so the block stays visible.
+            state.plainCore = new net.minecraft.client.renderer.block.BlockModelRenderState();
+            net.minecraft.client.Minecraft.getInstance().getBlockModelResolver().update(state.plainCore,
+                    tile.getBlockState().setValue(com.brandon3055.draconicevolution.blocks.machines.EnergyCore.ACTIVE, false), PLAIN);
+        }
     }
 
     @Override
     public void submit(State state, PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState camera) {
+        if (state.plainCore != null) state.plainCore.submitMultiLayer(poseStack, collector, state.lightCoords, net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY, 0);
         if (state.guide != null) state.guide.submit(poseStack, collector);
         if (state.geometry != null) state.geometry.submit(poseStack, collector);
     }
 
     private void extractGeometry(TileEnergyCore te, float partialTicks, PoseStack poseStack, MultiBufferSource getter, int packedLight, int packedOverlay) {
+        if (!com.brandon3055.draconicevolution.DEConfig.blockEffectRendering) return; // client safety switch (blockEffectRendering)
         if (!te.active.get()) {
             return;
         }
@@ -213,7 +224,9 @@ public class RenderTileEnergyCore implements BlockEntityRenderer<TileEnergyCore,
             Matrix4 mat = matrix4.copy();
             mat.translate(-posOffset.get().getX() + 0.5, -posOffset.get().getY() + 0.5, -posOffset.get().getZ() + 0.5);
 
-            Direction facing = Direction.getNearest(0, 0, 0, Direction.NORTH);//Direction.getFacingFromAxis(Direction.AxisDirection.POSITIVE, te.multiBlockAxis);
+            // Upstream: Direction.getNearest(x, y, z) of the stabilizer offset. 26.1 only has the overload with a
+            // fallback; the port passed (0, 0, 0), which always returned the fallback, so every beam pointed north.
+            Direction facing = Direction.getNearest(posOffset.get(), Direction.NORTH);
             if (facing.getAxis() == Direction.Axis.X || facing.getAxis() == Direction.Axis.Y) {
                 mat.rotate(-90F * MathHelper.torad, new Vector3(-facing.getStepY(), facing.getStepX(), 0).normalize());
             } else if (facing == Direction.SOUTH) {
