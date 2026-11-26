@@ -260,7 +260,7 @@ public class EnergyCoreGui extends ContainerGuiProvider<EnergyCoreMenu> {
                 .setTooltipSingle(() -> TOOLKIT.translate("config_colour"));
         Constraints.placeOutside(setColour, customColour, Constraints.LayoutPos.MIDDLE_LEFT, 0, 0);
 
-        // eli.6: per-player client toggle for DE block effects (core, stabilizers, pylons, reactor). Same setting as
+        // Per-player client toggle for DE block effects (core, stabilizers, pylons, reactor). Same setting as
         // "blockEffectRendering" in config/brandon3055/DraconicEvolution.cfg; saved immediately, applies next frame.
         GuiButton effects = TOOLKIT.createThemedIconButton(root, 12, DEGuiTextures.getter("effects_toggle"))
                 .onPress(() -> com.brandon3055.draconicevolution.DEConfig.modifyClientProperty("blockEffectRendering",
