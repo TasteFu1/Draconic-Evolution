@@ -94,6 +94,9 @@ public class TileCrystalDirectIO extends TileCrystalBase   {
 
         if (outputMode.get() && tile != null) {
             opStorage.extractOP(EnergyUtils.insertEnergy(tile, opStorage.extractOP(opStorage.maxExtract(), true), facing.get().getOpposite(), false), false);
+        } else if (tile != null && !(tile instanceof TileCrystalBase)) {
+            // Input mode also pulls: many FE blocks (cells, batteries, capacitor banks) only push when configured to.
+            EnergyUtils.transferEnergy(tile, facing.get().getOpposite(), opStorage);
         }
     }
 
@@ -101,12 +104,14 @@ public class TileCrystalDirectIO extends TileCrystalBase   {
 
     @Override
     public InteractionResult onBlockUse(BlockState state, Player player, InteractionHand hand, BlockHitResult hit) {
-        if (player instanceof ServerPlayer && player.isShiftKeyDown()) {
+        if (!player.isShiftKeyDown()) return InteractionResult.PASS;
+        // SUCCESS on both sides: a client PASS made vanilla retry with the off hand, so the server got a second click
+        // and switched the mode straight back. Only the main hand switches.
+        if (player instanceof ServerPlayer && hand == InteractionHand.MAIN_HAND) {
             outputMode.invert();
             updateRotation(facing.get());
-            return InteractionResult.SUCCESS;
         }
-        return InteractionResult.PASS;
+        return InteractionResult.SUCCESS;
     }
 
     //region Rendering

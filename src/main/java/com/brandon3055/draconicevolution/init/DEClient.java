@@ -127,6 +127,7 @@ public class DEClient {
         event.registerBlockEntityRenderer(DEContent.TILE_GRINDER.get(), RenderTileGrinder::new);
         event.registerBlockEntityRenderer(DEContent.TILE_DRACONIUM_CHEST.get(), DraconiumChestTileRenderer::new);
         event.registerBlockEntityRenderer(DEContent.TILE_STORAGE_CORE.get(), RenderTileEnergyCore::new);
+        event.registerBlockEntityRenderer(DEContent.TILE_STRUCTURE_BLOCK.get(), com.brandon3055.draconicevolution.client.render.tile.RenderTileStructureBlock::new);
         event.registerBlockEntityRenderer(DEContent.TILE_ENERGY_PYLON.get(), RenderTileEnergyPylon::new);
         event.registerBlockEntityRenderer(DEContent.TILE_CORE_STABILIZER.get(), RenderEnergyCoreStabilizer::new);
         event.registerBlockEntityRenderer(DEContent.TILE_STABILIZED_SPAWNER.get(), RenderTileStabilizedSpawner::new);
@@ -250,7 +251,9 @@ public class DEClient {
         }
         if (BrandonsCore.equipmentManager != null) {
             ItemStack curio = BrandonsCore.equipmentManager.findMatchingItem(e -> e.getItem() instanceof IModularArmor, entity);
-            return curio.getItem() instanceof IModularArmor item && item.canElytraFlyBC(curio, entity);
+            // Hidden curio slot = no wings either (flight itself is unaffected; this only drives the wing model).
+            return curio.getItem() instanceof IModularArmor item && item.canElytraFlyBC(curio, entity)
+                    && com.brandon3055.draconicevolution.integration.equipment.EquipmentManager.isCurioVisible(e -> e.getItem() instanceof IModularArmor, entity);
         }
         return false;
     }

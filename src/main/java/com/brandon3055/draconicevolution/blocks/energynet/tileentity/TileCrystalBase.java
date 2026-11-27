@@ -18,7 +18,6 @@ import com.brandon3055.brandonscore.lib.IInteractTile;
 
 import com.brandon3055.brandonscore.lib.ITilePlaceListener;
 
-import com.brandon3055.brandonscore.lib.Vec3B;
 
 import com.brandon3055.brandonscore.utils.MathUtils;
 
@@ -113,7 +112,7 @@ public abstract class TileCrystalBase extends TileBCore implements ITilePlaceLis
 
     protected int tick = 0;
     //    private int crystalTier = -1;
-    protected LinkedList<Vec3B> linkedCrystals = new LinkedList<>();
+    protected LinkedList<BlockPos> linkedCrystals = new LinkedList<>();
     public LinkedList<int[]> transferRatesArrays = new LinkedList<>();
     public LinkedList<Byte> flowRates = new LinkedList<>();
     private LinkedList<BlockPos> linkedPosCache = null;
@@ -132,6 +131,15 @@ public abstract class TileCrystalBase extends TileBCore implements ITilePlaceLis
         fxHandler = DraconicEvolution.proxy.createENetFXHandler(this);
 
         capManager.setInternalManaged("energy", CapabilityOP.OP, opStorage).saveBoth().syncContainer();
+    }
+
+    @Override
+    public void setLevel(net.minecraft.world.level.Level level) {
+        super.setLevel(level);
+        // Pick the effect handler by the level's side. The constructor guesses with EffectiveSide, which reports
+        // "client" on chunk-loading worker threads, so crystals loaded from a save got the client handler on the
+        // server and never sent flow updates: no flow beams (they only showed with the binder).
+        fxHandler = level.isClientSide() ? createClientFXHandler() : createServerFXHandler();
     }
 
     //region Energy Balance
@@ -235,7 +243,7 @@ public abstract class TileCrystalBase extends TileBCore implements ITilePlaceLis
     public List<BlockPos> getLinks() {
         if (linkedPosCache == null || linkedPosCache.size() != linkedCrystals.size()) { //TODO make sure linkedPosCache is set null client side when the links change!
             linkedPosCache = new LinkedList<>();
-            for (Vec3B offset : linkedCrystals) {
+            for (BlockPos offset : linkedCrystals) {
                 linkedPosCache.add(fromOffset(offset));
             }
             fxHandler.reloadConnections();
@@ -307,7 +315,7 @@ public abstract class TileCrystalBase extends TileBCore implements ITilePlaceLis
 
     @Override
     public boolean createLink(ICrystalLink otherCrystal) {
-        Vec3B offset = getOffset(((BlockEntity) otherCrystal).getBlockPos());
+        BlockPos offset = getOffset(((BlockEntity) otherCrystal).getBlockPos());
         linkedCrystals.add(offset);
         linkedPosCache = null;
         updateBlock();
@@ -318,7 +326,7 @@ public abstract class TileCrystalBase extends TileBCore implements ITilePlaceLis
 
     @Override
     public void breakLink(BlockPos otherCrystal) {
-        Vec3B offset = getOffset(otherCrystal);
+        BlockPos offset = getOffset(otherCrystal);
 
         if (linkedCrystals.contains(offset)) {
             linkedCrystals.remove(offset);
@@ -402,15 +410,16 @@ public abstract class TileCrystalBase extends TileBCore implements ITilePlaceLis
     /**
      * Returns the offset of the target block relative to the position of this block.
      */
-    public Vec3B getOffset(BlockPos target) {
-        return new Vec3B(worldPosition.subtract(target));
+    public BlockPos getOffset(BlockPos target) {
+        // Full int offset. Was a signed-byte offset, which wrapped for links more than 127 blocks away (Chaotic range 256).
+        return worldPosition.subtract(target);
     }
 
     /**
      * Returns the actual position of the target block based on its offset relative to this block.
      */
-    public BlockPos fromOffset(Vec3B targetOffset) {
-        return worldPosition.subtract(targetOffset.getPos());
+    public BlockPos fromOffset(BlockPos targetOffset) {
+        return worldPosition.subtract(targetOffset);
     }
 
     public ENetFXHandler getFxHandler() {
@@ -493,8 +502,8 @@ public abstract class TileCrystalBase extends TileBCore implements ITilePlaceLis
     public void writeExtraNBT(CompoundTag compound) {
         compound.putByte("tech_level", (byte) techLevel.ordinal());
         ListTag list = new ListTag();
-        for (Vec3B vec : linkedCrystals) {
-            list.add(new ByteArrayTag(new byte[]{vec.x, vec.y, vec.z}));
+        for (BlockPos vec : linkedCrystals) {
+            list.add(new net.minecraft.nbt.IntArrayTag(new int[]{vec.getX(), vec.getY(), vec.getZ()}));
         }
         compound.put("linked_crystals", list);
         fxHandler.writeToNBT(compound);
@@ -513,8 +522,14 @@ public abstract class TileCrystalBase extends TileBCore implements ITilePlaceLis
         ListTag list = compound.getListOrEmpty("linked_crystals");
         linkedCrystals.clear();
         for (int i = 0; i < list.size(); i++) {
-            byte[] data = ((ByteArrayTag) list.get(i)).getAsByteArray();
-            linkedCrystals.add(new Vec3B(data[0], data[1], data[2]));
+            // Old saves hold byte offsets, new ones int offsets.
+            if (list.get(i) instanceof net.minecraft.nbt.IntArrayTag ints && ints.getAsIntArray().length == 3) {
+                int[] d = ints.getAsIntArray();
+                linkedCrystals.add(new BlockPos(d[0], d[1], d[2]));
+            } else if (list.get(i) instanceof ByteArrayTag bytes && bytes.getAsByteArray().length == 3) {
+                byte[] d = bytes.getAsByteArray();
+                linkedCrystals.add(new BlockPos(d[0], d[1], d[2]));
+            }
         }
         if (linkedPosCache != null) {
             linkedPosCache.clear();
