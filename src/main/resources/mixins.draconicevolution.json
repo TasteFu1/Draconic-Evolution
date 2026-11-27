@@ -5,12 +5,14 @@
   "target": "@env(DEFAULT)",
   "compatibilityLevel": "JAVA_25",
   "mixins": [
+    "CurioChestpieceEnchantMixin",
     "EndIslandDensityFunctionMixin",
     "ServerEntityMixin",
     "TheEndBiomeSourceMixin"
   ],
   "client": [
     "CapeLayerMixin",
+    "CustomGeometryOrderMixin",
     "PlayerModelMixin"
   ]
 }
